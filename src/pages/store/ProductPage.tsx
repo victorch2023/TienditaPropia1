@@ -5,6 +5,7 @@ import { getCategory } from '../../services/categories'
 import { useCart } from '../../hooks/useCart'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { formatSoles } from '../../utils/money'
+import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import type { Product } from '../../types'
 
@@ -68,8 +69,8 @@ export function ProductPage() {
     <div className="grid gap-8 md:grid-cols-2">
       <div className="overflow-hidden rounded-xl bg-white">
         {product.images[0] ? (
-          <img
-            src={toDirectImageUrl(product.images[0])}
+          <DriveImage
+            src={product.images[0]}
             alt={product.name}
             className="w-full object-cover"
           />
@@ -81,9 +82,9 @@ export function ProductPage() {
         {product.images.length > 1 && (
           <div className="mt-2 flex gap-2 overflow-x-auto p-2">
             {product.images.map((img, i) => (
-              <img
+              <DriveImage
                 key={i}
-                src={toDirectImageUrl(img)}
+                src={img}
                 alt=""
                 className="h-16 w-16 rounded object-cover"
               />

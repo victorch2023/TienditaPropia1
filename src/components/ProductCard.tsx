@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Product } from '../types'
 import { formatSoles } from '../utils/money'
-import { toDirectImageUrl } from '../utils/driveImageUrl'
+import { DriveImage } from './DriveImage'
 
 interface ProductCardProps {
   product: Product
@@ -17,8 +17,8 @@ export function ProductCard({ product }: ProductCardProps) {
     >
       <div className="aspect-square overflow-hidden bg-gray-100">
         {image ? (
-          <img
-            src={toDirectImageUrl(image)}
+          <DriveImage
+            src={image}
             alt={product.name}
             className="h-full w-full object-cover transition group-hover:scale-105"
           />

@@ -10,7 +10,8 @@ import { getStoreConfig } from '../../services/store'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { resolveDriveImagesFolderUrl } from '../../constants/drive'
 import { formatSoles, solesToCentavos } from '../../utils/money'
-import { toDirectImageUrl } from '../../utils/driveImageUrl'
+import { DriveImage } from '../../components/DriveImage'
+import { toDirectImageUrl, isGoogleDriveFolderUrl } from '../../utils/driveImageUrl'
 import type { Category, Product } from '../../types'
 
 const emptyProduct = {
@@ -33,6 +34,7 @@ export function AdminProductsPage() {
   const [saving, setSaving] = useState(false)
   const [driveFolderUrl, setDriveFolderUrl] = useState(resolveDriveImagesFolderUrl())
   const [localFileHint, setLocalFileHint] = useState(false)
+  const [imagePreviewFailed, setImagePreviewFailed] = useState<Record<number, boolean>>({})
 
   const load = () => {
     setLoading(true)
@@ -68,6 +70,7 @@ export function AdminProductsPage() {
       setImageUrls([''])
     }
     setLocalFileHint(false)
+    setImagePreviewFailed({})
   }
 
   const normalizeImages = () =>
@@ -115,6 +118,11 @@ export function AdminProductsPage() {
     const next = [...imageUrls]
     next[index] = value
     setImageUrls(next)
+    setImagePreviewFailed((prev) => {
+      const updated = { ...prev }
+      delete updated[index]
+      return updated
+    })
   }
 
   const convertImageUrl = (index: number) => {
@@ -246,30 +254,65 @@ export function AdminProductsPage() {
                 )}
               </div>
               {imageUrls.map((url, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
-                    placeholder="https://drive.google.com/file/d/..."
-                    value={url}
-                    onChange={(e) => updateImageUrl(i, e.target.value)}
-                    className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                  />
-                  {url.trim() && (
+                <div key={i} className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      placeholder="https://drive.google.com/file/d/..."
+                      value={url}
+                      onChange={(e) => updateImageUrl(i, e.target.value)}
+                      className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                    />
+                    {url.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => convertImageUrl(i)}
+                        className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                        title="Convertir enlace de Drive a URL directa"
+                      >
+                        Drive → directo
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => convertImageUrl(i)}
-                      className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                      title="Convertir enlace de Drive a URL directa"
+                      onClick={() => removeImageUrl(i)}
+                      className="shrink-0 rounded-lg border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                     >
-                      Drive → directo
+                      Quitar
                     </button>
+                  </div>
+                  {url.trim() && isGoogleDriveFolderUrl(url) && (
+                    <p className="text-sm text-red-600">
+                      Este enlace es de una carpeta de Drive, no de un archivo. Abre la imagen,
+                      compártela con «Cualquier persona con el enlace» y pega el enlace del
+                      archivo (formato …/file/d/…).
+                    </p>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => removeImageUrl(i)}
-                    className="shrink-0 rounded-lg border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    Quitar
-                  </button>
+                  {url.trim() && !isGoogleDriveFolderUrl(url) && (
+                    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <DriveImage
+                        src={url}
+                        alt="Vista previa"
+                        className="h-20 w-20 shrink-0 rounded object-cover"
+                        onAllCandidatesFailed={() =>
+                          setImagePreviewFailed((prev) => ({ ...prev, [i]: true }))
+                        }
+                      />
+                      <div className="text-sm">
+                        <p className="font-medium text-gray-700">Vista previa</p>
+                        {imagePreviewFailed[i] ? (
+                          <p className="mt-1 text-amber-800">
+                            No se pudo cargar la imagen. Verifica que el archivo esté compartido
+                            como «Cualquier persona con el enlace» y que sea un enlace de archivo,
+                            no de carpeta.
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-gray-500">
+                            Si ves la miniatura, la imagen debería mostrarse en la tienda.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <button
@@ -313,8 +356,8 @@ export function AdminProductsPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {p.images[0] && (
-                      <img
-                        src={toDirectImageUrl(p.images[0])}
+                      <DriveImage
+                        src={p.images[0]}
                         alt=""
                         className="h-10 w-10 rounded object-cover"
                       />
