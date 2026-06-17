@@ -1,0 +1,14 @@
+rules_version = '2';
+// Firebase Storage es OPCIONAL en este proyecto.
+// Las imágenes de productos se hospedan en Google Drive (u otro servicio) y las URLs
+// se guardan en Firestore. No necesitas activar Storage en el plan Spark.
+// Estas reglas solo aplican si decides usar Storage en el futuro.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}

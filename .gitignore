@@ -1,0 +1,12 @@
+node_modules
+dist
+.npm-bootstrap
+dist-ssr
+*.local
+.env
+.env.local
+functions/lib
+functions/node_modules
+.firebase
+*.log
+.DS_Store

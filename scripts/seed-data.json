@@ -1,0 +1,94 @@
+{
+  "storeConfig": {
+    "name": "Mi Tiendita",
+    "description": "Tu tienda virtual en Lima Metropolitana",
+    "igvRate": 0.18,
+    "shippingDefault": 1200,
+    "shippingByDistrito": {
+      "Miraflores": 1000,
+      "San Isidro": 1000,
+      "Surco": 1500
+    },
+    "payments": {
+      "culqiEnabled": false,
+      "yapeNumber": "999 888 777",
+      "plinNumber": "999 888 777",
+      "bankName": "BCP",
+      "bankAccount": "191-12345678-0-12",
+      "bankCCI": "00219100123456781234",
+      "paymentInstructions": "Realiza el pago por el monto exacto e indica tu número de pedido."
+    },
+    "imageHostingNote": "Carpeta compartida «Shared Tiendita Images»: https://drive.google.com/drive/folders/1D3Vir25MPJVJTKe3Zq6vtBblN22x6tgh?usp=sharing — No uses el enlace de la carpeta en productos; pega el enlace de cada archivo (botón Drive → directo en admin)."
+  },
+  "categories": [
+    { "id": "cat-electronica", "name": "Electrónica", "slug": "electronica", "order": 1 },
+    { "id": "cat-hogar", "name": "Hogar", "slug": "hogar", "order": 2 },
+    { "id": "cat-moda", "name": "Moda", "slug": "moda", "order": 3 }
+  ],
+  "products": [
+    {
+      "id": "prod-audifonos",
+      "name": "Audífonos Bluetooth Pro",
+      "description": "Sonido envolvente, cancelación de ruido y 30 h de batería.",
+      "price": 8990,
+      "stock": 25,
+      "sku": "AUD-001",
+      "categoryId": "cat-electronica",
+      "images": ["https://picsum.photos/seed/seed-audifonos/600/600"],
+      "variants": [],
+      "active": true
+    },
+    {
+      "id": "prod-cargador",
+      "name": "Cargador rápido USB-C",
+      "description": "65 W, compatible con laptops y celulares.",
+      "price": 4590,
+      "stock": 40,
+      "sku": "CHG-002",
+      "categoryId": "cat-electronica",
+      "images": ["https://picsum.photos/seed/seed-cargador/600/600"],
+      "variants": [],
+      "active": true
+    },
+    {
+      "id": "prod-tazas",
+      "name": "Set de tazas cerámica",
+      "description": "Pack x4, apto para microondas.",
+      "price": 3290,
+      "stock": 18,
+      "sku": "HOG-003",
+      "categoryId": "cat-hogar",
+      "images": ["https://picsum.photos/seed/seed-tazas/600/600"],
+      "variants": [],
+      "active": true
+    },
+    {
+      "id": "prod-lampara",
+      "name": "Lámpara de escritorio LED",
+      "description": "Luz cálida regulable.",
+      "price": 5490,
+      "stock": 12,
+      "sku": "HOG-004",
+      "categoryId": "cat-hogar",
+      "images": ["https://picsum.photos/seed/seed-lampara/600/600"],
+      "variants": [],
+      "active": true
+    },
+    {
+      "id": "prod-polo",
+      "name": "Polo algodón premium",
+      "description": "Tallas S–XL.",
+      "price": 3990,
+      "stock": 30,
+      "sku": "MOD-005",
+      "categoryId": "cat-moda",
+      "images": ["https://picsum.photos/seed/seed-polo/600/600"],
+      "variants": [
+        { "id": "v-s", "name": "S", "stock": 10 },
+        { "id": "v-m", "name": "M", "stock": 12 },
+        { "id": "v-l", "name": "L", "stock": 8 }
+      ],
+      "active": true
+    }
+  ]
+}
