@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { demoError, isDemoMode } from '../config/demo'
+import { stripUndefined } from '../utils/firestore'
 import type { Order, OrderPayment, OrderStatus } from '../types'
 
 const COL = 'orders'
@@ -22,7 +23,7 @@ export async function createOrder(order: Omit<Order, 'id'>): Promise<string> {
     return DEMO_ORDER_ID
   }
   const orderRef = doc(collection(db, COL))
-  await setDoc(orderRef, { ...order, id: orderRef.id })
+  await setDoc(orderRef, stripUndefined({ ...order, id: orderRef.id }))
   return orderRef.id
 }
 
@@ -33,10 +34,13 @@ export async function updateOrderPayment(
   if (isDemoMode()) return
   const order = await getOrder(orderId)
   if (!order) return
-  await updateDoc(doc(db, COL, orderId), {
-    payment: { ...order.payment, ...payment },
-    updatedAt: Date.now(),
-  })
+  await updateDoc(
+    doc(db, COL, orderId),
+    stripUndefined({
+      payment: { ...order.payment, ...payment },
+      updatedAt: Date.now(),
+    })
+  )
 }
 
 export async function getOrder(id: string): Promise<Order | null> {
@@ -86,10 +90,13 @@ export async function updateOrderFiscalStatus(
   if (isDemoMode()) throw demoError('Actualizar facturación')
   const order = await getOrder(id)
   if (!order) return
-  await updateDoc(doc(db, COL, id), {
-    fiscal: { ...order.fiscal, status: fiscalStatus },
-    updatedAt: Date.now(),
-  })
+  await updateDoc(
+    doc(db, COL, id),
+    stripUndefined({
+      fiscal: { ...order.fiscal, status: fiscalStatus },
+      updatedAt: Date.now(),
+    })
+  )
 }
 
 export async function getOrdersByUser(userId: string): Promise<Order[]> {
