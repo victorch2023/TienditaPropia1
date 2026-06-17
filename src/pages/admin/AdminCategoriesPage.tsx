@@ -6,6 +6,7 @@ import {
   deleteCategory,
 } from '../../services/categories'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
+import { DriveImage } from '../../components/DriveImage'
 import { slugify } from '../../utils/money'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import type { Category } from '../../types'
@@ -17,6 +18,7 @@ export function AdminCategoriesPage() {
   const [name, setName] = useState('')
   const [order, setOrder] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
+  const [bannerUrl, setBannerUrl] = useState('')
 
   const load = () => {
     setLoading(true)
@@ -35,11 +37,13 @@ export function AdminCategoriesPage() {
       setName(cat.name)
       setOrder(cat.order)
       setImageUrl(cat.imageUrl || '')
+      setBannerUrl(cat.bannerUrl || '')
     } else {
       setEditing('new')
       setName('')
       setOrder(categories.length)
       setImageUrl('')
+      setBannerUrl('')
     }
   }
 
@@ -49,6 +53,7 @@ export function AdminCategoriesPage() {
       slug: slugify(name),
       order,
       imageUrl: imageUrl.trim() ? toDirectImageUrl(imageUrl) : undefined,
+      bannerUrl: bannerUrl.trim() ? toDirectImageUrl(bannerUrl) : undefined,
     }
     if (editing === 'new') {
       await createCategory(data)
@@ -95,21 +100,61 @@ export function AdminCategoriesPage() {
               onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
               className="rounded-lg border px-3 py-2 text-sm"
             />
-            <div className="col-span-2 flex gap-2">
-              <input
-                placeholder="URL de imagen (Google Drive, opcional)"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="flex-1 rounded-lg border px-3 py-2 text-sm"
-              />
-              {imageUrl.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setImageUrl(toDirectImageUrl(imageUrl))}
-                  className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                >
-                  Drive → directo
-                </button>
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Imagen miniatura (opcional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  placeholder="URL de imagen (Google Drive)"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                />
+                {imageUrl.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(toDirectImageUrl(imageUrl))}
+                    className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Drive → directo
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Banner de categoría (cabecera en catálogo)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  placeholder="URL del banner en Google Drive"
+                  value={bannerUrl}
+                  onChange={(e) => setBannerUrl(e.target.value)}
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                />
+                {bannerUrl.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setBannerUrl(toDirectImageUrl(bannerUrl))}
+                    className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                  >
+                    Drive → directo
+                  </button>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Recomendado: 800×200 px, máx. 1 MB, JPG/PNG/WebP. Se muestra al filtrar por esta
+                categoría en el catálogo.
+              </p>
+              {bannerUrl.trim() && (
+                <div className="relative mt-2 overflow-hidden rounded-lg border">
+                  <DriveImage
+                    src={bannerUrl}
+                    alt="Vista previa del banner"
+                    className="h-20 w-full object-cover"
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -133,6 +178,9 @@ export function AdminCategoriesPage() {
             <div>
               <span className="font-medium">{c.name}</span>
               <span className="ml-2 text-sm text-gray-500">/{c.slug}</span>
+              {c.bannerUrl && (
+                <span className="ml-2 text-xs text-brand-600">con banner</span>
+              )}
             </div>
             <div>
               <button onClick={() => startEdit(c)} className="mr-3 text-brand-600 hover:underline text-sm">

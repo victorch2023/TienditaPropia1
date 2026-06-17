@@ -15,6 +15,8 @@ export interface Category {
   slug: string
   order: number
   imageUrl?: string
+  /** Banner de cabecera en el catálogo al filtrar por esta categoría */
+  bannerUrl?: string
 }
 
 export interface ProductVariant {
@@ -117,6 +119,16 @@ export interface StorePaymentsConfig {
 export interface StoreConfig {
   name: string
   logoUrl?: string
+  /** Banner principal de la página de inicio (URL de imagen en Drive) */
+  heroBannerUrl?: string
+  /** Imagen de fondo sutil para toda la tienda */
+  backgroundImageUrl?: string
+  /** Color principal de la marca (botones, enlaces) — hex */
+  primaryColor?: string
+  /** Color oscuro para hover — hex */
+  primaryDark?: string
+  /** Color de acento — hex */
+  accentColor?: string
   ruc?: string
   razonSocial?: string
   igvRate: number

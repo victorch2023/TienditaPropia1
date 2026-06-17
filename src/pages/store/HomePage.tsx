@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ProductCard } from '../../components/ProductCard'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
+import { DriveImage } from '../../components/DriveImage'
 import { useProducts } from '../../hooks/useProducts'
 import { useCategories } from '../../hooks/useCategories'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
@@ -11,20 +12,46 @@ export function HomePage() {
   const { config } = useStoreConfig()
 
   const featured = products.slice(0, 8)
+  const hasHeroBanner = Boolean(config.heroBannerUrl?.trim())
 
   return (
     <div>
-      <section className="mb-10 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 px-8 py-12 text-white">
-        <h1 className="text-3xl font-bold md:text-4xl">Bienvenido a {config.name}</h1>
-        <p className="mt-3 max-w-xl text-brand-100">
-          {config.description || 'Compra en línea con envío en Lima Metropolitana'}
-        </p>
-        <Link
-          to="/catalogo"
-          className="mt-6 inline-block rounded-lg bg-white px-6 py-3 font-medium text-brand-700 hover:bg-brand-50"
-        >
-          Ver catálogo
-        </Link>
+      <section className="relative mb-10 min-h-[200px] overflow-hidden rounded-2xl md:min-h-[280px]">
+        {hasHeroBanner ? (
+          <>
+            <DriveImage
+              src={config.heroBannerUrl!}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-900/70 to-brand-700/50" />
+            <div className="relative px-8 py-12 text-white">
+              <h1 className="text-3xl font-bold md:text-4xl">Bienvenido a {config.name}</h1>
+              <p className="mt-3 max-w-xl text-white/90">
+                {config.description || 'Compra en línea con envío en Lima Metropolitana'}
+              </p>
+              <Link
+                to="/catalogo"
+                className="mt-6 inline-block rounded-lg bg-white px-6 py-3 font-medium text-brand-700 hover:bg-brand-50"
+              >
+                Ver catálogo
+              </Link>
+            </div>
+          </>
+        ) : (
+          <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-8 py-12 text-white">
+            <h1 className="text-3xl font-bold md:text-4xl">Bienvenido a {config.name}</h1>
+            <p className="mt-3 max-w-xl text-brand-100">
+              {config.description || 'Compra en línea con envío en Lima Metropolitana'}
+            </p>
+            <Link
+              to="/catalogo"
+              className="mt-6 inline-block rounded-lg bg-white px-6 py-3 font-medium text-brand-700 hover:bg-brand-50"
+            >
+              Ver catálogo
+            </Link>
+          </div>
+        )}
       </section>
 
       {categories.length > 0 && (

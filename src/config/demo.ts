@@ -25,6 +25,10 @@ export const DEMO_STORE_CONFIG: StoreConfig = {
   ...DEFAULT_STORE_CONFIG,
   name: 'Mi Tiendita (demo)',
   description: 'Vista previa local — configura Firebase en .env para datos reales',
+  primaryColor: '#7c3aed',
+  primaryDark: '#6d28d9',
+  accentColor: '#a78bfa',
+  heroBannerUrl: 'https://picsum.photos/seed/tiendita-hero/1200/400',
   shippingDefault: 1200,
   shippingByDistrito: {
     Miraflores: 1000,
@@ -46,7 +50,13 @@ export const DEMO_STORE_CONFIG: StoreConfig = {
 }
 
 export const DEMO_CATEGORIES: Category[] = [
-  { id: 'demo-cat-1', name: 'Electrónica', slug: 'electronica', order: 1 },
+  {
+    id: 'demo-cat-1',
+    name: 'Electrónica',
+    slug: 'electronica',
+    order: 1,
+    bannerUrl: 'https://picsum.photos/seed/tiendita-cat-electronica/800/200',
+  },
   { id: 'demo-cat-2', name: 'Hogar', slug: 'hogar', order: 2 },
   { id: 'demo-cat-3', name: 'Moda', slug: 'moda', order: 3 },
 ]

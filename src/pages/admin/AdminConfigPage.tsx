@@ -7,6 +7,8 @@ import {
   DEFAULT_DRIVE_IMAGES_FOLDER_URL,
   resolveDriveImagesFolderUrl,
 } from '../../constants/drive'
+import { DriveImage } from '../../components/DriveImage'
+import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import type { StoreConfig } from '../../types'
 import { DEFAULT_STORE_CONFIG } from '../../types'
 
@@ -26,7 +28,18 @@ export function AdminConfigPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updateStoreConfig(config)
+      const toSave: StoreConfig = {
+        ...config,
+        logoUrl: config.logoUrl?.trim() ? toDirectImageUrl(config.logoUrl) : undefined,
+        heroBannerUrl: config.heroBannerUrl?.trim()
+          ? toDirectImageUrl(config.heroBannerUrl)
+          : undefined,
+        backgroundImageUrl: config.backgroundImageUrl?.trim()
+          ? toDirectImageUrl(config.backgroundImageUrl)
+          : undefined,
+      }
+      await updateStoreConfig(toSave)
+      setConfig(toSave)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } finally {
@@ -108,6 +121,157 @@ export function AdminConfigPage() {
             placeholder="https://drive.google.com/file/d/..."
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Recomendado: 200×200 px, cuadrado, PNG con fondo transparente, máx. 500 KB.
+          </p>
+          {config.logoUrl?.trim() && (
+            <div className="mt-2 flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
+              <DriveImage src={config.logoUrl} alt="Vista previa del logo" className="max-h-full max-w-full object-contain" />
+            </div>
+          )}
+        </div>
+
+        <div className="border-t pt-4">
+          <h2 className="mb-3 font-semibold text-gray-900">Apariencia de la tienda</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Banner de inicio (URL en Drive)
+              </label>
+              <input
+                value={config.heroBannerUrl || ''}
+                onChange={(e) => setConfig({ ...config, heroBannerUrl: e.target.value })}
+                placeholder="https://drive.google.com/file/d/..."
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Recomendado: 1200×400 px (proporción 3:1), máx. 2 MB, JPG/PNG/WebP. Si está vacío,
+                se muestra un degradado con los colores de la marca.
+              </p>
+              {config.heroBannerUrl?.trim() && (
+                <div className="mt-2 overflow-hidden rounded-lg border">
+                  <DriveImage
+                    src={config.heroBannerUrl}
+                    alt="Vista previa del banner de inicio"
+                    className="h-32 w-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Imagen de fondo de la tienda (opcional)
+              </label>
+              <input
+                value={config.backgroundImageUrl || ''}
+                onChange={(e) => setConfig({ ...config, backgroundImageUrl: e.target.value })}
+                placeholder="https://drive.google.com/file/d/..."
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Recomendado: 1920×1080 px, imagen suave o patrón, máx. 2 MB. Se aplica con
+                opacidad para mantener el texto legible.
+              </p>
+              {config.backgroundImageUrl?.trim() && (
+                <div className="relative mt-2 overflow-hidden rounded-lg border">
+                  <DriveImage
+                    src={config.backgroundImageUrl}
+                    alt="Vista previa del fondo"
+                    className="h-24 w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-white/85" />
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-medium text-gray-700">Colores de la marca</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="block text-xs text-gray-600">Color principal</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={config.primaryColor || '#2563eb'}
+                      onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
+                      className="h-9 w-12 cursor-pointer rounded border"
+                    />
+                    <input
+                      value={config.primaryColor || ''}
+                      onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
+                      placeholder="#2563eb"
+                      className="flex-1 rounded-lg border px-2 py-1.5 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600">Color oscuro (hover)</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={config.primaryDark || '#1d4ed8'}
+                      onChange={(e) => setConfig({ ...config, primaryDark: e.target.value })}
+                      className="h-9 w-12 cursor-pointer rounded border"
+                    />
+                    <input
+                      value={config.primaryDark || ''}
+                      onChange={(e) => setConfig({ ...config, primaryDark: e.target.value })}
+                      placeholder="#1d4ed8"
+                      className="flex-1 rounded-lg border px-2 py-1.5 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600">Color de acento</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={config.accentColor || '#3b82f6'}
+                      onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                      className="h-9 w-12 cursor-pointer rounded border"
+                    />
+                    <input
+                      value={config.accentColor || ''}
+                      onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                      placeholder="#3b82f6"
+                      className="flex-1 rounded-lg border px-2 py-1.5 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Deja vacío para usar los colores azules por defecto. Los cambios se aplican a
+                botones, enlaces y el banner de inicio.
+              </p>
+              {(config.primaryColor || config.primaryDark || config.accentColor) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {config.primaryColor && (
+                    <span
+                      className="rounded-lg px-4 py-2 text-sm text-white"
+                      style={{ backgroundColor: config.primaryColor }}
+                    >
+                      Principal
+                    </span>
+                  )}
+                  {config.primaryDark && (
+                    <span
+                      className="rounded-lg px-4 py-2 text-sm text-white"
+                      style={{ backgroundColor: config.primaryDark }}
+                    >
+                      Oscuro
+                    </span>
+                  )}
+                  {config.accentColor && (
+                    <span
+                      className="rounded-lg px-4 py-2 text-sm text-white"
+                      style={{ backgroundColor: config.accentColor }}
+                    >
+                      Acento
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">
