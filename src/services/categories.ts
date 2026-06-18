@@ -12,6 +12,7 @@ import {
 import { db } from './firebase'
 import { DEMO_CATEGORIES, demoError, isDemoMode } from '../config/demo'
 import type { Category } from '../types'
+import { stripUndefined } from '../utils/firestore'
 
 const COL = 'categories'
 
@@ -32,13 +33,13 @@ export async function getCategory(id: string): Promise<Category | null> {
 export async function createCategory(data: Omit<Category, 'id'>): Promise<string> {
   if (isDemoMode()) throw demoError('Crear categorías')
   const ref = doc(collection(db, COL))
-  await setDoc(ref, { ...data, createdAt: Date.now() })
+  await setDoc(ref, stripUndefined({ ...data, createdAt: Date.now() }))
   return ref.id
 }
 
 export async function updateCategory(id: string, data: Partial<Category>): Promise<void> {
   if (isDemoMode()) throw demoError('Editar categorías')
-  await updateDoc(doc(db, COL, id), { ...data, updatedAt: Date.now() })
+  await updateDoc(doc(db, COL, id), stripUndefined({ ...data, updatedAt: Date.now() }))
 }
 
 export async function deleteCategory(id: string): Promise<void> {

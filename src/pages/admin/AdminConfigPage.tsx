@@ -13,6 +13,11 @@ import { getStoreThemeStyle } from '../../utils/theme'
 import type { StoreConfig } from '../../types'
 import { DEFAULT_STORE_CONFIG } from '../../types'
 
+function emptyToUndefined(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
 function normalizeConfigForSave(config: StoreConfig): StoreConfig {
   return {
     ...config,
@@ -23,6 +28,22 @@ function normalizeConfigForSave(config: StoreConfig): StoreConfig {
     backgroundImageUrl: config.backgroundImageUrl?.trim()
       ? toDirectImageUrl(config.backgroundImageUrl)
       : undefined,
+    description: emptyToUndefined(config.description),
+    primaryColor: emptyToUndefined(config.primaryColor),
+    primaryDark: emptyToUndefined(config.primaryDark),
+    accentColor: emptyToUndefined(config.accentColor),
+    ruc: emptyToUndefined(config.ruc),
+    razonSocial: emptyToUndefined(config.razonSocial),
+    imageHostingNote: emptyToUndefined(config.imageHostingNote),
+    payments: {
+      ...config.payments,
+      yapeNumber: emptyToUndefined(config.payments.yapeNumber),
+      plinNumber: emptyToUndefined(config.payments.plinNumber),
+      bankName: emptyToUndefined(config.payments.bankName),
+      bankAccount: emptyToUndefined(config.payments.bankAccount),
+      bankCCI: emptyToUndefined(config.payments.bankCCI),
+      paymentInstructions: emptyToUndefined(config.payments.paymentInstructions),
+    },
   }
 }
 

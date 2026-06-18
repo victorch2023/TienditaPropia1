@@ -17,6 +17,7 @@ import {
   isDemoMode,
 } from '../config/demo'
 import type { Product } from '../types'
+import { stripUndefined } from '../utils/firestore'
 
 const COL = 'products'
 
@@ -57,13 +58,13 @@ export async function getProduct(id: string): Promise<Product | null> {
 export async function createProduct(data: Omit<Product, 'id'>): Promise<string> {
   if (isDemoMode()) throw demoError('Crear productos')
   const refDoc = doc(collection(db, COL))
-  await setDoc(refDoc, { ...data, createdAt: Date.now() })
+  await setDoc(refDoc, stripUndefined({ ...data, createdAt: Date.now() }))
   return refDoc.id
 }
 
 export async function updateProduct(id: string, data: Partial<Product>): Promise<void> {
   if (isDemoMode()) throw demoError('Editar productos')
-  await updateDoc(doc(db, COL, id), { ...data, updatedAt: Date.now() })
+  await updateDoc(doc(db, COL, id), stripUndefined({ ...data, updatedAt: Date.now() }))
 }
 
 export async function deleteProduct(id: string): Promise<void> {

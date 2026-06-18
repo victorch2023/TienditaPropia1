@@ -2,6 +2,7 @@ import { doc, getDoc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/fire
 import { db } from './firebase'
 import { DEMO_STORE_CONFIG, demoError, isDemoMode } from '../config/demo'
 import { DEFAULT_PAYMENTS_CONFIG, DEFAULT_STORE_CONFIG, type StoreConfig } from '../types'
+import { stripUndefined } from '../utils/firestore'
 
 const CONFIG_PATH = 'stores/config'
 
@@ -45,7 +46,11 @@ export function subscribeStoreConfig(
 
 export async function updateStoreConfig(config: Partial<StoreConfig>): Promise<void> {
   if (isDemoMode()) throw demoError('Guardar configuración')
-  await setDoc(doc(db, CONFIG_PATH), { ...config, updatedAt: Date.now() }, { merge: true })
+  await setDoc(
+    doc(db, CONFIG_PATH),
+    stripUndefined({ ...config, updatedAt: Date.now() }),
+    { merge: true }
+  )
 }
 
 export function getShippingCost(
