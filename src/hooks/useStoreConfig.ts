@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { getStoreConfig } from '../services/store'
+import { useCallback, useEffect, useState } from 'react'
+import { getStoreConfig, subscribeStoreConfig } from '../services/store'
 import type { StoreConfig } from '../types'
 import { DEFAULT_STORE_CONFIG } from '../types'
 
@@ -7,12 +7,25 @@ export function useStoreConfig() {
   const [config, setConfig] = useState<StoreConfig>(DEFAULT_STORE_CONFIG)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    getStoreConfig()
-      .then(setConfig)
-      .catch(() => setConfig(DEFAULT_STORE_CONFIG))
-      .finally(() => setLoading(false))
+  const refresh = useCallback(async () => {
+    const data = await getStoreConfig()
+    setConfig(data)
+    return data
   }, [])
 
-  return { config, loading, refresh: () => getStoreConfig().then(setConfig) }
+  useEffect(() => {
+    const unsub = subscribeStoreConfig(
+      (data) => {
+        setConfig(data)
+        setLoading(false)
+      },
+      () => {
+        setConfig(DEFAULT_STORE_CONFIG)
+        setLoading(false)
+      }
+    )
+    return unsub
+  }, [])
+
+  return { config, loading, refresh }
 }

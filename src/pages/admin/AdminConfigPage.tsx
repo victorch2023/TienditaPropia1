@@ -9,14 +9,31 @@ import {
 } from '../../constants/drive'
 import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
+import { getStoreThemeStyle } from '../../utils/theme'
 import type { StoreConfig } from '../../types'
 import { DEFAULT_STORE_CONFIG } from '../../types'
+
+function normalizeConfigForSave(config: StoreConfig): StoreConfig {
+  return {
+    ...config,
+    logoUrl: config.logoUrl?.trim() ? toDirectImageUrl(config.logoUrl) : undefined,
+    heroBannerUrl: config.heroBannerUrl?.trim()
+      ? toDirectImageUrl(config.heroBannerUrl)
+      : undefined,
+    backgroundImageUrl: config.backgroundImageUrl?.trim()
+      ? toDirectImageUrl(config.backgroundImageUrl)
+      : undefined,
+  }
+}
+
+const STOREFRONT_URL = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href
 
 export function AdminConfigPage() {
   const [config, setConfig] = useState<StoreConfig>(DEFAULT_STORE_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [savedConfigJson, setSavedConfigJson] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [driveHelpOpen, setDriveHelpOpen] = useState(false)
 
   useEffect(() => {
@@ -25,23 +42,23 @@ export function AdminConfigPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const showSuccessBanner =
+    savedConfigJson !== null &&
+    savedConfigJson === JSON.stringify(normalizeConfigForSave(config))
+
   const handleSave = async () => {
     setSaving(true)
+    setSaveError(null)
     try {
-      const toSave: StoreConfig = {
-        ...config,
-        logoUrl: config.logoUrl?.trim() ? toDirectImageUrl(config.logoUrl) : undefined,
-        heroBannerUrl: config.heroBannerUrl?.trim()
-          ? toDirectImageUrl(config.heroBannerUrl)
-          : undefined,
-        backgroundImageUrl: config.backgroundImageUrl?.trim()
-          ? toDirectImageUrl(config.backgroundImageUrl)
-          : undefined,
-      }
+      const toSave = normalizeConfigForSave(config)
       await updateStoreConfig(toSave)
       setConfig(toSave)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setSavedConfigJson(JSON.stringify(toSave))
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo guardar la configuración.'
+      setSaveError(message)
+      setSavedConfigJson(null)
     } finally {
       setSaving(false)
     }
@@ -72,6 +89,37 @@ export function AdminConfigPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold text-gray-900">Configuración de tienda</h1>
+
+      {showSuccessBanner && (
+        <div
+          role="status"
+          className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+        >
+          <p className="font-medium">✓ Configuración guardada correctamente</p>
+          <p className="mt-1 text-green-700">
+            Los colores y la apariencia se aplican en la{' '}
+            <strong>tienda pública</strong>, no en este panel de administración.{' '}
+            <a
+              href={STOREFRONT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-green-900 underline hover:text-green-950"
+            >
+              Ver tienda →
+            </a>
+          </p>
+        </div>
+      )}
+
+      {saveError && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          <p className="font-medium">No se pudo guardar la configuración</p>
+          <p className="mt-1">{saveError}</p>
+        </div>
+      )}
 
       <details
         open={driveHelpOpen}
@@ -240,8 +288,28 @@ export function AdminConfigPage() {
               </div>
               <p className="mt-2 text-xs text-gray-500">
                 Deja vacío para usar los colores azules por defecto. Los cambios se aplican a
-                botones, enlaces y el banner de inicio.
+                botones, enlaces y el banner de inicio en la tienda pública (no en el panel admin).
               </p>
+              <div
+                className="mt-4 overflow-hidden rounded-xl border bg-gray-50"
+                style={getStoreThemeStyle(config)}
+              >
+                <p className="border-b bg-white px-3 py-2 text-xs font-medium text-gray-600">
+                  Vista previa en vivo
+                </p>
+                <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-4 py-3 text-sm text-white">
+                  {config.name || 'Mi tienda'}
+                </div>
+                <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <span className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white">
+                    Botón principal
+                  </span>
+                  <span className="text-xs font-medium text-brand-600 underline">Enlace</span>
+                  <span className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white">
+                    Acento
+                  </span>
+                </div>
+              </div>
               {(config.primaryColor || config.primaryDark || config.accentColor) && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {config.primaryColor && (
@@ -442,13 +510,25 @@ export function AdminConfigPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-lg bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
-        >
-          {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar configuración'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-lg bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? 'Guardando...' : 'Guardar configuración'}
+          </button>
+          {showSuccessBanner && (
+            <a
+              href={STOREFRONT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+              Ver tienda en nueva pestaña →
+            </a>
+          )}
+        </div>
       </div>
     </div>
   )
