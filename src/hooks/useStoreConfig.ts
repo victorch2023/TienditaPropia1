@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getDemoStoreConfig } from '../config/stores'
 import { getStoreConfig, subscribeStoreConfig } from '../services/store'
 import type { StoreConfig } from '../types'
-import { DEFAULT_STORE_CONFIG } from '../types'
 import { useStore } from './useStore'
 
 export function useStoreConfig() {
   const { storeId } = useStore()
-  const [config, setConfig] = useState<StoreConfig>(DEFAULT_STORE_CONFIG)
+  const [config, setConfig] = useState<StoreConfig>(() =>
+    getDemoStoreConfig(storeId)
+  )
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -16,6 +18,8 @@ export function useStoreConfig() {
   }, [storeId])
 
   useEffect(() => {
+    // Defaults síncronos por storeId (evita flash de "Mi Tiendita" en Citroleaf)
+    setConfig(getDemoStoreConfig(storeId))
     setLoading(true)
     const unsub = subscribeStoreConfig(
       storeId,
@@ -24,12 +28,18 @@ export function useStoreConfig() {
         setLoading(false)
       },
       () => {
-        setConfig(DEFAULT_STORE_CONFIG)
+        setConfig(getDemoStoreConfig(storeId))
         setLoading(false)
       }
     )
     return unsub
   }, [storeId])
+
+  useEffect(() => {
+    if (config.name) {
+      document.title = config.name
+    }
+  }, [config.name])
 
   return { config, loading, refresh, storeId }
 }

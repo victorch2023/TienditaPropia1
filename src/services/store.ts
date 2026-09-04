@@ -14,7 +14,6 @@ import {
   LEGACY_CONFIG_DOC_ID,
   STORE_REGISTRY,
   getDemoStoreConfig,
-  getStoreMeta,
 } from '../config/stores'
 import {
   DEFAULT_PAYMENTS_CONFIG,
@@ -25,14 +24,17 @@ import {
 import { stripUndefined } from '../utils/firestore'
 
 export function parseStoreConfigData(
-  data: Record<string, unknown> | undefined
+  data: Record<string, unknown> | undefined,
+  storeId?: string
 ): StoreConfig {
-  if (!data) return DEFAULT_STORE_CONFIG
+  const base = storeId ? getDemoStoreConfig(storeId) : DEFAULT_STORE_CONFIG
+  if (!data) return base
   return {
-    ...DEFAULT_STORE_CONFIG,
+    ...base,
     ...data,
     payments: {
       ...DEFAULT_PAYMENTS_CONFIG,
+      ...base.payments,
       ...(data.payments as StoreConfig['payments'] | undefined),
     },
   } as StoreConfig
@@ -50,13 +52,8 @@ async function readStoreDoc(storeId: string) {
 export async function getStoreConfig(storeId: string): Promise<StoreConfig> {
   if (isDemoMode()) return getDemoStoreConfig(storeId)
   const snap = await readStoreDoc(storeId)
-  if (!snap.exists()) {
-    const meta = getStoreMeta(storeId)
-    return meta
-      ? { ...DEFAULT_STORE_CONFIG, name: meta.name, description: meta.tagline, slug: storeId, active: true }
-      : DEFAULT_STORE_CONFIG
-  }
-  return parseStoreConfigData(snap.data())
+  if (!snap.exists()) return getDemoStoreConfig(storeId)
+  return parseStoreConfigData(snap.data(), storeId)
 }
 
 export function subscribeStoreConfig(
@@ -73,31 +70,20 @@ export function subscribeStoreConfig(
     doc(db, 'stores', storeId),
     (snap) => {
       if (snap.exists()) {
-        onData(parseStoreConfigData(snap.data()))
+        onData(parseStoreConfigData(snap.data(), storeId))
         return
       }
       if (storeId === DEFAULT_STORE_ID) {
         getDoc(doc(db, 'stores', LEGACY_CONFIG_DOC_ID)).then((legacy) => {
           onData(
             legacy.exists()
-              ? parseStoreConfigData(legacy.data())
-              : DEFAULT_STORE_CONFIG
+              ? parseStoreConfigData(legacy.data(), storeId)
+              : getDemoStoreConfig(storeId)
           )
         })
         return
       }
-      const meta = getStoreMeta(storeId)
-      onData(
-        meta
-          ? {
-              ...DEFAULT_STORE_CONFIG,
-              name: meta.name,
-              description: meta.tagline,
-              slug: storeId,
-              active: true,
-            }
-          : DEFAULT_STORE_CONFIG
-      )
+      onData(getDemoStoreConfig(storeId))
     },
     (err) => onError?.(err)
   )

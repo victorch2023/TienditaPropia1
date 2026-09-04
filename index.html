@@ -9,12 +9,26 @@
     <script>
       (function () {
         var host = (location.hostname || '').toLowerCase()
+        var path = location.pathname || ''
         var custom =
           host === 'citroleaf.com' ||
           host === 'www.citroleaf.com' ||
           host.endsWith('.citroleaf.com')
+        var citroleafPath = /\/s\/citroleaf(\/|$)/.test(path)
         var base = custom ? '/' : '/TienditaPropia1/'
         document.write('<base href="' + base + '">')
+        if (custom || citroleafPath) {
+          document.title = 'Citroleaf'
+          var desc = document.querySelector('meta[name="description"]')
+          if (desc) {
+            desc.setAttribute(
+              'content',
+              'Protección natural para tu piel y para tu planeta. Repelentes orgánicos contra zancudos, hechos en Lima.'
+            )
+          }
+          var og = document.querySelector('meta[property="og:title"]')
+          if (og) og.setAttribute('content', 'Citroleaf')
+        }
       })()
     </script>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
