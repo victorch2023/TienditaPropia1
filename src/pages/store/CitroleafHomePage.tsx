@@ -69,7 +69,7 @@ export function CitroleafHomePage() {
               to={path('catalogo')}
               className="mt-8 inline-block border border-white px-8 py-3.5 text-[11px] font-medium uppercase tracking-[0.25em] text-white transition hover:bg-white hover:text-[#261F1A]"
             >
-              Shop now
+              Comprar
             </Link>
           </div>
         </div>
@@ -130,7 +130,7 @@ export function CitroleafHomePage() {
             to={path('catalogo')}
             className="mt-8 inline-block border border-[#F2F0EB] px-8 py-3 text-[11px] uppercase tracking-[0.25em] transition hover:bg-[#F2F0EB] hover:text-[#261F1A]"
           >
-            Shop now
+            Comprar
           </Link>
         </div>
       </section>
