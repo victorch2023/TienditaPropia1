@@ -17,7 +17,6 @@ export function Header() {
     return (
       <CitroleafHeader
         itemCount={itemCount}
-        storeName={config.name}
         path={path}
         showStoresLink={showStoresLink}
       />
@@ -77,12 +76,10 @@ export function Header() {
 
 function CitroleafHeader({
   itemCount,
-  storeName,
   path,
   showStoresLink,
 }: {
   itemCount: number
-  storeName: string
   path: (s?: string) => string
   showStoresLink: boolean
 }) {
@@ -108,7 +105,7 @@ function CitroleafHeader({
               to={path()}
               className="font-citro-serif text-4xl font-medium tracking-tight text-[#261F1A] md:text-5xl"
             >
-              {storeName}
+              CITROLEAF
             </Link>
             <p className="mt-3 text-center text-[11px] uppercase tracking-[0.22em] text-[#261F1A]/80">
               Naturalmente libre de mosquitos

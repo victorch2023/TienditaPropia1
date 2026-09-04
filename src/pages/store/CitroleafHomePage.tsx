@@ -59,7 +59,7 @@ export function CitroleafHomePage() {
               Lima · Protección orgánica
             </p>
             <h1 className="font-citro-serif text-5xl leading-[0.95] tracking-tight md:text-7xl">
-              Citroleaf
+              CITROLEAF
             </h1>
             <p className="mt-5 max-w-md text-sm leading-relaxed text-white/85 md:text-base">
               {config.description ||
@@ -163,7 +163,7 @@ export function CitroleafHomePage() {
       </section>
 
       <footer className="border-t border-[#261F1A]/15 bg-[#F2F0EB] px-6 py-12 text-center">
-        <p className="font-citro-serif text-2xl">{config.name}</p>
+        <p className="font-citro-serif text-2xl">CITROLEAF</p>
         <p className="mt-3 text-sm text-[#261F1A]/70">
           {config.description}
         </p>
@@ -176,7 +176,7 @@ export function CitroleafHomePage() {
           @citroleaf__
         </a>
         <p className="mt-8 text-xs text-[#261F1A]/45">
-          © {new Date().getFullYear()} Citroleaf. Envíos en Lima Metropolitana.
+          © {new Date().getFullYear()} CITROLEAF. Envíos en Lima Metropolitana.
         </p>
       </footer>
     </div>
