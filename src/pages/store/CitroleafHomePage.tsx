@@ -35,16 +35,16 @@ export function CitroleafHomePage() {
 
   return (
     <div className="bg-[#F2F0EB] text-[#261F1A]">
-      {/* Hero split — ambas mitades a sangre, misma estructura de contenedor */}
-      <section className="citro-fade-in grid w-full min-h-[70vh] md:grid-cols-2">
-        <div className="relative h-full min-h-[70vh] w-full overflow-hidden bg-[#1a1a14]">
+      {/* Hero split — izquierda: foto cuadrada completa (3 botellas); derecha: cover */}
+      <section className="citro-fade-in grid w-full md:min-h-[70vh] md:grid-cols-2 md:items-stretch">
+        <div className="flex w-full items-center justify-center bg-[#1a1a14] p-4 md:min-h-[70vh] md:p-8">
           <img
             src={heroLeft}
             alt="Citroleaf Organic Repellent — natural por elección"
-            className="absolute inset-0 block h-full w-full object-contain object-center"
+            className="h-auto w-full max-w-full object-contain"
           />
         </div>
-        <div className="relative flex h-full min-h-[70vh] w-full flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:px-14">
+        <div className="relative flex min-h-[70vh] w-full flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:px-14">
           <img
             src={heroRight}
             alt=""
