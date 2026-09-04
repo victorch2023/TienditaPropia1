@@ -3,16 +3,25 @@ import { useCart } from '../hooks/useCart'
 import { useStore } from '../hooks/useStore'
 import { useStoreConfig } from '../hooks/useStoreConfig'
 import { CITROLEAF_STORE_ID } from '../config/stores'
+import { isCustomDomainHostname } from '../config/domains'
 import { toDirectImageUrl } from '../utils/driveImageUrl'
 
 export function Header() {
   const { itemCount } = useCart()
   const { config } = useStoreConfig()
-  const { path, storeId } = useStore()
+  const { path, storeId, rootPaths } = useStore()
   const isCitroleaf = storeId === CITROLEAF_STORE_ID
+  const showStoresLink = !rootPaths && !isCustomDomainHostname()
 
   if (isCitroleaf) {
-    return <CitroleafHeader itemCount={itemCount} storeName={config.name} path={path} />
+    return (
+      <CitroleafHeader
+        itemCount={itemCount}
+        storeName={config.name}
+        path={path}
+        showStoresLink={showStoresLink}
+      />
+    )
   }
 
   return (
@@ -43,9 +52,11 @@ export function Header() {
           <Link to={path('cuenta')} className="text-sm text-gray-600 hover:text-brand-600">
             Mi cuenta
           </Link>
-          <Link to="/" className="text-sm text-gray-400 hover:text-brand-600">
-            Tiendas
-          </Link>
+          {showStoresLink && (
+            <Link to="/" className="text-sm text-gray-400 hover:text-brand-600">
+              Tiendas
+            </Link>
+          )}
         </nav>
 
         <Link
@@ -68,10 +79,12 @@ function CitroleafHeader({
   itemCount,
   storeName,
   path,
+  showStoresLink,
 }: {
   itemCount: number
   storeName: string
   path: (s?: string) => string
+  showStoresLink: boolean
 }) {
   return (
     <header className="sticky top-0 z-50 bg-[#F2F0EB]">
@@ -80,12 +93,16 @@ function CitroleafHeader({
       </div>
       <div className="border-b border-[#261F1A]/10 px-4 pb-4 pt-5">
         <div className="mx-auto flex max-w-6xl items-start justify-between">
-          <Link
-            to="/"
-            className="pt-1 text-[10px] uppercase tracking-[0.18em] text-[#261F1A]/60 transition hover:text-[#261F1A]"
-          >
-            Tiendas
-          </Link>
+          {showStoresLink ? (
+            <Link
+              to="/"
+              className="pt-1 text-[10px] uppercase tracking-[0.18em] text-[#261F1A]/60 transition hover:text-[#261F1A]"
+            >
+              Tiendas
+            </Link>
+          ) : (
+            <span className="w-16 pt-1" aria-hidden />
+          )}
           <div className="flex flex-1 flex-col items-center">
             <Link
               to={path()}

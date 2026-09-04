@@ -2,17 +2,20 @@
 
 Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`) y **Citroleaf** (`citroleaf`). Imágenes vía Google Drive / URLs públicas. Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
 
-**URL de producción:** `https://victorch2023.github.io/TienditaPropia1/`
+**URL de producción (multi-tienda):** `https://victorch2023.github.io/TienditaPropia1/`
+
+**Dominio Citroleaf:** `https://www.citroleaf.com` → abre la tienda Citroleaf en `/` (sin prefijo `/s/citroleaf`).
 
 ### URLs de tiendas
 
 | Tienda | Storefront | Admin |
 |--------|------------|-------|
-| Selector | `/` o `/tiendas` | — |
+| Selector (solo github.io) | `/` o `/tiendas` | — |
 | La Tiendita Chévere | `/s/tiendita` | `/s/tiendita/admin` |
-| Citroleaf | `/s/citroleaf` | `/s/citroleaf/admin` |
+| Citroleaf (github.io) | `/s/citroleaf` | `/s/citroleaf/admin` |
+| Citroleaf (www.citroleaf.com) | `/`, `/catalogo`, … | `/admin` |
 
-Base Vite: `/TienditaPropia1/` (GitHub Pages).
+En dominio custom el Router usa basename `/`; en github.io/local usa `/TienditaPropia1`.
 
 ---
 
@@ -227,6 +230,54 @@ Abre `http://localhost:5173/TienditaPropia1/`
    - `VITE_CULQI_PUBLIC_KEY` (solo si activas Culqi)
    - `VITE_FUNCTIONS_URL` (solo si activas Culqi)
 3. Push a `main` → el workflow `.github/workflows/deploy.yml` despliega automáticamente
+
+### 5.1 Dominio custom Citroleaf (GoDaddy + GitHub Pages)
+
+El repo incluye `public/CNAME` con `www.citroleaf.com` para que el archivo CNAME viaje en cada build del artifact de Pages.
+
+#### A) GitHub → Settings → Pages
+
+1. **Custom domain:** escribe `www.citroleaf.com` y guarda
+2. Espera a que GitHub verifique el DNS (puede tardar minutos u horas)
+3. Activa **Enforce HTTPS** cuando esté disponible
+4. (Opcional) Si quieres que `citroleaf.com` (apex) también funcione, GitHub mostrará instrucciones A/ALIAS; el código ya mapea ambos hosts a la tienda `citroleaf`
+
+#### B) GoDaddy → DNS del dominio `citroleaf.com`
+
+En la zona DNS (no en “Forwarding” si puedes evitarlo; preferible DNS records):
+
+| Tipo | Nombre | Valor | Notas |
+|------|--------|-------|-------|
+| CNAME | `www` | `victorch2023.github.io` | Obligatorio para `www.citroleaf.com` |
+| A | `@` | `185.199.108.153` | Apex → GitHub Pages (opcional) |
+| A | `@` | `185.199.109.153` | |
+| A | `@` | `185.199.110.153` | |
+| A | `@` | `185.199.111.153` | |
+
+- Quita CNAME/A viejos que apunten a parking de GoDaddy si entran en conflicto.
+- TTL: 600 o el default.
+- No uses “Domain Forwarding” a github.io si ya configuraste CNAME/A: el forwarding suele romper HTTPS y rutas.
+
+IPs A actuales de GitHub Pages: [docs.github.com — Configuring an apex domain](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site#configuring-an-apex-domain).
+
+#### C) Firebase Auth — Authorized domains
+
+En [Firebase Console](https://console.firebase.google.com) → Authentication → Settings → **Authorized domains**, agrega:
+
+- `www.citroleaf.com`
+- `citroleaf.com`
+
+Sin esto, login/registro fallan en el dominio custom (el dominio github.io ya suele estar autorizado).
+
+#### D) Comprobar
+
+1. `https://www.citroleaf.com/` → home Citroleaf
+2. `https://www.citroleaf.com/catalogo` → catálogo
+3. `https://www.citroleaf.com/admin/login` → admin
+4. `https://www.citroleaf.com/s/citroleaf/catalogo` → redirige a `/catalogo`
+5. github.io sigue con selector + `/s/:storeId` (si GitHub no redirige todo el sitio al custom domain)
+
+> Nota: al poner un custom domain en un *project site*, GitHub puede redirigir `*.github.io/TienditaPropia1/` hacia el dominio custom. Si necesitas el selector multi-tienda en github.io y Citroleaf en su dominio a la vez, confirma en Pages que el redirect del dominio por defecto se comporta como quieres.
 
 ---
 

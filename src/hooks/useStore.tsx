@@ -11,41 +11,59 @@ import { DEFAULT_STORE_ID } from '../config/stores/constants'
 
 interface StoreContextValue {
   storeId: string
-  /** Prefijo de rutas de esta tienda: `/s/{storeId}` */
+  /** Prefijo de rutas: `/s/{storeId}` o `` en dominio custom (rutas en raíz). */
   basePath: string
-  /** Construye ruta relativa a la tienda, p.ej. path('catalogo') → `/s/citroleaf/catalogo` */
+  /** true cuando las rutas viven en `/` sin `/s/:storeId` */
+  rootPaths: boolean
+  /** Construye ruta de la tienda, p.ej. path('catalogo') */
   path: (subpath?: string) => string
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null)
 
-export function storeBasePath(storeId: string) {
+export function storeBasePath(storeId: string, rootPaths = false) {
+  if (rootPaths) return ''
   return `/s/${storeId}`
 }
 
-export function buildStorePath(storeId: string, subpath = '') {
-  const base = storeBasePath(storeId)
-  if (!subpath || subpath === '/') return base
+export function buildStorePath(
+  storeId: string,
+  subpath = '',
+  rootPaths = false
+) {
+  const base = storeBasePath(storeId, rootPaths)
+  if (!subpath || subpath === '/') return base || '/'
   const clean = subpath.startsWith('/') ? subpath.slice(1) : subpath
-  return `${base}/${clean}`
+  return base ? `${base}/${clean}` : `/${clean}`
 }
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+export function StoreProvider({
+  children,
+  storeId: storeIdProp,
+  rootPaths = false,
+}: {
+  children: ReactNode
+  /** Fuerza storeId (dominio custom); si no, usa param de `/s/:storeId`. */
+  storeId?: string
+  /** Rutas en raíz (`/catalogo`) en lugar de `/s/:storeId/catalogo`. */
+  rootPaths?: boolean
+}) {
   const { storeId: param } = useParams<{ storeId: string }>()
-  const storeId = param || DEFAULT_STORE_ID
+  const storeId = storeIdProp || param || DEFAULT_STORE_ID
 
   const path = useCallback(
-    (subpath = '') => buildStorePath(storeId, subpath),
-    [storeId]
+    (subpath = '') => buildStorePath(storeId, subpath, rootPaths),
+    [storeId, rootPaths]
   )
 
   const value = useMemo(
     () => ({
       storeId,
-      basePath: storeBasePath(storeId),
+      basePath: storeBasePath(storeId, rootPaths),
+      rootPaths,
       path,
     }),
-    [storeId, path]
+    [storeId, rootPaths, path]
   )
 
   if (!isKnownStoreId(storeId)) {

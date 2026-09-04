@@ -11,6 +11,7 @@ import {
 import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import { getStoreThemeStyle } from '../../utils/theme'
+import { getDocumentBaseHref } from '../../config/domains'
 import type { StoreConfig } from '../../types'
 import { DEFAULT_STORE_CONFIG } from '../../types'
 
@@ -48,7 +49,7 @@ function normalizeConfigForSave(config: StoreConfig): StoreConfig {
   }
 }
 
-const STOREFRONT_URL = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href
+const STOREFRONT_URL = `${window.location.origin}${getDocumentBaseHref()}`
 
 export function AdminConfigPage() {
   const { storeId } = useStore()

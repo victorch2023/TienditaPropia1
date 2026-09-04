@@ -21,8 +21,17 @@ import { AdminConfigPage } from './pages/admin/AdminConfigPage'
 import { AdminBillingPage } from './pages/admin/AdminBillingPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { DEFAULT_STORE_ID } from './config/stores'
+import {
+  getRouterBasename,
+  getStoreIdFromHostname,
+} from './config/domains'
 
-const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/TienditaPropia1'
+const domainStoreId =
+  typeof window !== 'undefined'
+    ? getStoreIdFromHostname(window.location.hostname)
+    : null
+
+const basename = getRouterBasename()
 
 function LegacyProductRedirect() {
   const { id } = useParams()
@@ -40,11 +49,77 @@ function LegacyAdminRedirect() {
   return <Navigate to={`/s/${DEFAULT_STORE_ID}/admin${suffix}`} replace />
 }
 
-function StoreScope() {
+/** En dominio custom: `/s/citroleaf/catalogo` → `/catalogo` */
+function CustomDomainStorePrefixRedirect({
+  expectedStoreId,
+}: {
+  expectedStoreId: string
+}) {
+  const { storeId, '*': rest } = useParams()
+  const suffix = rest ? `/${rest}` : '/'
+  if (storeId === expectedStoreId) {
+    return <Navigate to={suffix} replace />
+  }
+  return <Navigate to="/" replace />
+}
+
+function StoreRoutes() {
   return (
-    <StoreProvider>
+    <Routes>
+      <Route element={<StoreLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="catalogo" element={<CatalogPage />} />
+        <Route path="producto/:id" element={<ProductPage />} />
+        <Route path="carrito" element={<CartPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="pedido/:id" element={<OrderConfirmPage />} />
+        <Route path="cuenta" element={<AccountPage />} />
+      </Route>
+
+      <Route path="admin/login" element={<AdminLoginPage />} />
+      <Route path="admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="productos" element={<AdminProductsPage />} />
+        <Route path="categorias" element={<AdminCategoriesPage />} />
+        <Route path="pedidos" element={<AdminOrdersPage />} />
+        <Route path="facturacion" element={<AdminBillingPage />} />
+        <Route path="config" element={<AdminConfigPage />} />
+      </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  )
+}
+
+function StoreScope({
+  storeId,
+  rootPaths = false,
+}: {
+  storeId?: string
+  rootPaths?: boolean
+}) {
+  return (
+    <StoreProvider storeId={storeId} rootPaths={rootPaths}>
+      <CartProvider>
+        <StoreRoutes />
+      </CartProvider>
+    </StoreProvider>
+  )
+}
+
+/** Dominio custom (citroleaf.com): tienda en `/`, `/catalogo`, `/admin`, … */
+function CustomDomainApp({ storeId }: { storeId: string }) {
+  return (
+    <StoreProvider storeId={storeId} rootPaths>
       <CartProvider>
         <Routes>
+          <Route
+            path="s/:storeId/*"
+            element={
+              <CustomDomainStorePrefixRedirect expectedStoreId={storeId} />
+            }
+          />
+
           <Route element={<StoreLayout />}>
             <Route index element={<HomePage />} />
             <Route path="catalogo" element={<CatalogPage />} />
@@ -72,28 +147,57 @@ function StoreScope() {
   )
 }
 
+/** github.io / local: selector + `/s/:storeId/*` */
+function MultiStoreApp() {
+  return (
+    <Routes>
+      <Route index element={<StorePickerPage />} />
+      <Route path="tiendas" element={<StorePickerPage />} />
+      <Route path="s/:storeId/*" element={<StoreScope />} />
+
+      {/* Compatibilidad con URLs antiguas → tienda default */}
+      <Route
+        path="catalogo"
+        element={<Navigate to={`/s/${DEFAULT_STORE_ID}/catalogo`} replace />}
+      />
+      <Route path="producto/:id" element={<LegacyProductRedirect />} />
+      <Route
+        path="carrito"
+        element={<Navigate to={`/s/${DEFAULT_STORE_ID}/carrito`} replace />}
+      />
+      <Route
+        path="checkout"
+        element={<Navigate to={`/s/${DEFAULT_STORE_ID}/checkout`} replace />}
+      />
+      <Route path="pedido/:id" element={<LegacyPedidoRedirect />} />
+      <Route
+        path="cuenta"
+        element={<Navigate to={`/s/${DEFAULT_STORE_ID}/cuenta`} replace />}
+      />
+      <Route
+        path="admin/login"
+        element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin/login`} replace />}
+      />
+      <Route
+        path="admin"
+        element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin`} replace />}
+      />
+      <Route path="admin/*" element={<LegacyAdminRedirect />} />
+
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter basename={basename}>
       <AuthProvider>
-        <Routes>
-          <Route index element={<StorePickerPage />} />
-          <Route path="tiendas" element={<StorePickerPage />} />
-          <Route path="s/:storeId/*" element={<StoreScope />} />
-
-          {/* Compatibilidad con URLs antiguas → tienda default */}
-          <Route path="catalogo" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/catalogo`} replace />} />
-          <Route path="producto/:id" element={<LegacyProductRedirect />} />
-          <Route path="carrito" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/carrito`} replace />} />
-          <Route path="checkout" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/checkout`} replace />} />
-          <Route path="pedido/:id" element={<LegacyPedidoRedirect />} />
-          <Route path="cuenta" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/cuenta`} replace />} />
-          <Route path="admin/login" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin/login`} replace />} />
-          <Route path="admin" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin`} replace />} />
-          <Route path="admin/*" element={<LegacyAdminRedirect />} />
-
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        {domainStoreId ? (
+          <CustomDomainApp storeId={domainStoreId} />
+        ) : (
+          <MultiStoreApp />
+        )}
       </AuthProvider>
     </BrowserRouter>
   )
