@@ -5,9 +5,8 @@ import { useProducts } from '../../hooks/useProducts'
 import { useCategories } from '../../hooks/useCategories'
 import { useStore } from '../../hooks/useStore'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
+import heroLeft from '../../assets/citroleaf/hero-left.jpg'
 
-const HERO_LEAF =
-  'https://images.unsplash.com/photo-1466692476862-a44231189ab9?w=900&h=1100&fit=crop'
 const HERO_CITRUS =
   'https://images.unsplash.com/photo-1590502593747-42a996133562?w=700&h=900&fit=crop'
 const LIFESTYLE =
@@ -46,11 +45,10 @@ export function CitroleafHomePage() {
       <section className="citro-fade-in grid min-h-[70vh] md:grid-cols-2">
         <div className="relative min-h-[320px] overflow-hidden md:min-h-0">
           <img
-            src={HERO_LEAF}
-            alt="Hojas y naturaleza Citroleaf"
-            className="absolute inset-0 h-full w-full object-cover transition duration-700 hover:scale-105"
+            src={heroLeft}
+            alt="Citroleaf Organic Repellent — natural por elección"
+            className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 hover:scale-105"
           />
-          <div className="absolute inset-0 bg-[#261F1A]/15" />
         </div>
         <div className="relative flex flex-col justify-center gap-6 px-8 py-16 md:px-14">
           <img
