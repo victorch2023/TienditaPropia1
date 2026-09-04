@@ -132,7 +132,7 @@ function CitroleafHeader({
             to={path('carrito')}
             className="relative pt-1 text-[10px] uppercase tracking-[0.18em] text-[#261F1A] transition hover:opacity-70"
           >
-            Bolsa
+            Carrito
             {itemCount > 0 && (
               <span className="absolute -right-3 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#261F1A] text-[9px] text-[#F2F0EB]">
                 {itemCount}
