@@ -110,23 +110,9 @@ function CitroleafHeader({
             >
               {storeName}
             </Link>
-            <nav className="mt-3 flex flex-wrap items-center justify-center gap-5 text-[11px] uppercase tracking-[0.22em] text-[#261F1A]/80">
-              <Link to={path()} className="transition hover:text-[#261F1A]">
-                Inicio
-              </Link>
-              <Link to={path('catalogo')} className="transition hover:text-[#261F1A]">
-                Catálogo
-              </Link>
-              <Link
-                to={path('catalogo?categoria=repelentes-spray')}
-                className="transition hover:text-[#261F1A]"
-              >
-                Repelentes
-              </Link>
-              <Link to={path('cuenta')} className="transition hover:text-[#261F1A]">
-                Cuenta
-              </Link>
-            </nav>
+            <p className="mt-3 text-center text-[11px] uppercase tracking-[0.22em] text-[#261F1A]/80">
+              Naturalmente libre de mosquitos
+            </p>
           </div>
           <Link
             to={path('carrito')}
