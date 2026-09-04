@@ -37,11 +37,11 @@ export function CitroleafHomePage() {
     <div className="-mx-4 -my-6 bg-[#F2F0EB] text-[#261F1A] md:-mx-4">
       {/* Hero split */}
       <section className="citro-fade-in grid min-h-[70vh] md:grid-cols-2">
-        <div className="relative min-h-[320px] overflow-hidden md:min-h-0">
+        <div className="relative min-h-[320px] overflow-hidden bg-[#E8E4DC] md:min-h-0">
           <img
             src={heroLeft}
             alt="Citroleaf Organic Repellent — natural por elección"
-            className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 hover:scale-105"
+            className="absolute inset-0 h-full w-full object-contain object-center transition duration-700 hover:scale-105"
           />
         </div>
         <div className="relative flex min-h-[320px] flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:min-h-0 md:px-14">
