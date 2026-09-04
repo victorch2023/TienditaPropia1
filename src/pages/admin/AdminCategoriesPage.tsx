@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStore } from '../../hooks/useStore'
 import {
   getCategories,
   createCategory,
@@ -12,6 +13,7 @@ import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import type { Category } from '../../types'
 
 export function AdminCategoriesPage() {
+  const { storeId } = useStore()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
@@ -22,7 +24,7 @@ export function AdminCategoriesPage() {
 
   const load = () => {
     setLoading(true)
-    getCategories()
+    getCategories(storeId)
       .then(setCategories)
       .finally(() => setLoading(false))
   }
@@ -56,7 +58,7 @@ export function AdminCategoriesPage() {
       bannerUrl: bannerUrl.trim() ? toDirectImageUrl(bannerUrl) : undefined,
     }
     if (editing === 'new') {
-      await createCategory(data)
+      await createCategory(storeId, data)
     } else if (editing) {
       await updateCategory(editing, data)
     }

@@ -2,14 +2,33 @@ import { Outlet } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { DemoBanner } from './DemoBanner'
+import { useStore } from '../hooks/useStore'
 import { useStoreConfig } from '../hooks/useStoreConfig'
+import { CITROLEAF_STORE_ID } from '../config/stores'
 import { getStoreBackgroundStyle, getStoreThemeStyle } from '../utils/theme'
 
 export function StoreLayout() {
+  const { storeId } = useStore()
   const { config } = useStoreConfig()
   const themeStyle = getStoreThemeStyle(config)
   const backgroundStyle = getStoreBackgroundStyle(config)
   const hasBackground = Boolean(config.backgroundImageUrl?.trim())
+  const isCitroleaf = storeId === CITROLEAF_STORE_ID
+
+  if (isCitroleaf) {
+    return (
+      <div
+        className="relative flex min-h-screen flex-col bg-[#F2F0EB] font-citro-sans text-[#261F1A]"
+        style={themeStyle}
+      >
+        <DemoBanner />
+        <Header />
+        <main className="w-full flex-1 px-4 py-6">
+          <Outlet />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col bg-gray-50" style={themeStyle}>

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getProduct } from '../../services/products'
 import { getCategory } from '../../services/categories'
 import { useCart } from '../../hooks/useCart'
+import { useStore } from '../../hooks/useStore'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { formatSoles } from '../../utils/money'
 import { DriveImage } from '../../components/DriveImage'
@@ -11,6 +12,7 @@ import type { Product } from '../../types'
 
 export function ProductPage() {
   const { id } = useParams<{ id: string }>()
+  const { storeId, path } = useStore()
   const [product, setProduct] = useState<Product | null>(null)
   const [categoryName, setCategoryName] = useState('')
   const [quantity, setQuantity] = useState(1)
@@ -22,23 +24,23 @@ export function ProductPage() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    getProduct(id)
+    getProduct(storeId, id)
       .then(async (p) => {
         setProduct(p)
         if (p?.categoryId) {
-          const cat = await getCategory(p.categoryId)
+          const cat = await getCategory(storeId, p.categoryId)
           setCategoryName(cat?.name || '')
         }
       })
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, storeId])
 
   if (loading) return <LoadingSpinner />
   if (!product) {
     return (
       <div className="text-center">
         <p className="text-gray-500">Producto no encontrado.</p>
-        <Link to="/catalogo" className="mt-4 text-brand-600 hover:underline">
+        <Link to={path('catalogo')} className="mt-4 text-brand-600 hover:underline">
           Volver al catálogo
         </Link>
       </div>
@@ -143,7 +145,7 @@ export function ProductPage() {
           {maxStock <= 0 ? 'Agotado' : added ? '¡Agregado!' : 'Agregar al carrito'}
         </button>
 
-        <Link to="/carrito" className="mt-3 block text-center text-sm text-brand-600 hover:underline">
+        <Link to={path('carrito')} className="mt-3 block text-center text-sm text-brand-600 hover:underline">
           Ver carrito
         </Link>
       </div>

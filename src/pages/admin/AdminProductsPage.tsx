@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStore } from '../../hooks/useStore'
 import {
   getProducts,
   createProduct,
@@ -25,6 +26,7 @@ const emptyProduct = {
 }
 
 export function AdminProductsPage() {
+  const { storeId } = useStore()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,7 +40,7 @@ export function AdminProductsPage() {
 
   const load = () => {
     setLoading(true)
-    Promise.all([getProducts(false), getCategories()])
+    Promise.all([getProducts(storeId, false), getCategories(storeId)])
       .then(([p, c]) => {
         setProducts(p)
         setCategories(c)
@@ -48,8 +50,8 @@ export function AdminProductsPage() {
 
   useEffect(() => {
     load()
-    getStoreConfig().then((cfg) => setDriveFolderUrl(resolveDriveImagesFolderUrl(cfg.imageHostingNote)))
-  }, [])
+    getStoreConfig(storeId).then((cfg) => setDriveFolderUrl(resolveDriveImagesFolderUrl(cfg.imageHostingNote)))
+  }, [storeId])
 
   const startEdit = (product?: Product) => {
     if (product) {
@@ -96,7 +98,7 @@ export function AdminProductsPage() {
       }
 
       if (editing === 'new') {
-        await createProduct(data)
+        await createProduct(storeId, data)
       } else if (editing) {
         await updateProduct(editing, data)
       }

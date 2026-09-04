@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useStore } from '../../hooks/useStore'
 import { getAllOrders } from '../../services/orders'
 import { getProducts } from '../../services/products'
 import { OrderStatusBadge } from '../../components/OrderStatusBadge'
@@ -8,18 +9,19 @@ import { formatSoles } from '../../utils/money'
 import type { Order, Product } from '../../types'
 
 export function AdminDashboardPage() {
+  const { storeId, path } = useStore()
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([getAllOrders(), getProducts(false)])
+    Promise.all([getAllOrders(storeId), getProducts(storeId, false)])
       .then(([o, p]) => {
         setOrders(o)
         setProducts(p)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [storeId])
 
   if (loading) return <LoadingSpinner />
 
@@ -64,7 +66,7 @@ export function AdminDashboardPage() {
               {orders.slice(0, 10).map((o) => (
                 <tr key={o.id} className="border-t">
                   <td className="px-4 py-3">
-                    <Link to={`/admin/pedidos`} className="text-brand-600 hover:underline">
+                    <Link to={path('admin/pedidos')} className="text-brand-600 hover:underline">
                       #{o.id.slice(-8).toUpperCase()}
                     </Link>
                   </td>

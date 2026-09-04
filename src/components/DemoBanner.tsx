@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { isDemoMode } from '../config/demo'
+import { DEFAULT_STORE_ID } from '../config/stores'
 
 export function DemoBanner() {
   if (!isDemoMode()) return null
@@ -9,7 +10,10 @@ export function DemoBanner() {
       <strong>Modo demo</strong> — datos de ejemplo. Para producción, copia{' '}
       <code className="rounded bg-amber-100 px-1">.env.example</code> a{' '}
       <code className="rounded bg-amber-100 px-1">.env</code> y completa Firebase.{' '}
-      <Link to="/catalogo" className="font-medium underline hover:text-amber-700">
+      <Link
+        to={`/s/${DEFAULT_STORE_ID}/catalogo`}
+        className="font-medium underline hover:text-amber-700"
+      >
         Ver catálogo
       </Link>
     </div>

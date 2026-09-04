@@ -5,12 +5,26 @@ export interface AppUser {
   email: string | null
   displayName: string | null
   role: UserRole
+  /** Tiendas que puede administrar; si falta, admin global solo sobre la tienda default */
+  adminStores?: string[]
   dni?: string
   ruc?: string
 }
 
+/** Metadatos públicos de una tienda (selector / registro) */
+export interface StoreMeta {
+  id: string
+  slug: string
+  name: string
+  tagline?: string
+  active: boolean
+  instagram?: string
+  logoUrl?: string
+}
+
 export interface Category {
   id: string
+  storeId?: string
   name: string
   slug: string
   order: number
@@ -27,6 +41,7 @@ export interface ProductVariant {
 
 export interface Product {
   id: string
+  storeId?: string
   name: string
   description: string
   price: number
@@ -92,6 +107,7 @@ export interface OrderPayment {
 
 export interface Order {
   id: string
+  storeId?: string
   userId?: string
   items: OrderItem[]
   subtotal: number
@@ -118,6 +134,10 @@ export interface StorePaymentsConfig {
 
 export interface StoreConfig {
   name: string
+  /** Slug de la tienda (igual al doc id en stores/{storeId}) */
+  slug?: string
+  /** Si la tienda aparece en el selector */
+  active?: boolean
   logoUrl?: string
   /** Banner principal de la página de inicio (URL de imagen en Drive) */
   heroBannerUrl?: string

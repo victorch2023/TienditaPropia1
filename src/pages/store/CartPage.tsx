@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
+import { useStore } from '../../hooks/useStore'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
 import { formatSoles, calculateTotal } from '../../utils/money'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
@@ -7,13 +8,14 @@ import { toDirectImageUrl } from '../../utils/driveImageUrl'
 export function CartPage() {
   const { items, subtotal, updateQuantity, removeItem } = useCart()
   const { config } = useStoreConfig()
+  const { path } = useStore()
   const totals = calculateTotal(subtotal, config.shippingDefault, config.igvRate)
 
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900">Tu carrito está vacío</h1>
-        <Link to="/catalogo" className="mt-4 inline-block text-brand-600 hover:underline">
+        <Link to={path('catalogo')} className="mt-4 inline-block text-brand-600 hover:underline">
           Ir al catálogo
         </Link>
       </div>
@@ -94,7 +96,7 @@ export function CartPage() {
             </div>
           </dl>
           <Link
-            to="/checkout"
+            to={path('checkout')}
             className="mt-6 block w-full rounded-lg bg-brand-600 py-3 text-center font-medium text-white hover:bg-brand-700"
           >
             Proceder al pago

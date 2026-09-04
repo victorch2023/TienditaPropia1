@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LIMA_DISTRITOS } from '../../data/lima-distritos'
 import { useCart } from '../../hooks/useCart'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
+import { useStore } from '../../hooks/useStore'
 import { useAuth } from '../../hooks/useAuth'
 import {
   createOrder,
@@ -27,6 +28,7 @@ export function CheckoutPage() {
   const navigate = useNavigate()
   const { items, subtotal, clearCart } = useCart()
   const { config } = useStoreConfig()
+  const { storeId, path } = useStore()
   const { user } = useAuth()
   const [step, setStep] = useState<Step>(1)
   const [processing, setProcessing] = useState(false)
@@ -59,7 +61,7 @@ export function CheckoutPage() {
   const payments = config.payments
 
   if (items.length === 0 && step < 3) {
-    navigate('/carrito')
+    navigate(path('carrito'))
     return null
   }
 
@@ -133,6 +135,7 @@ export function CheckoutPage() {
     setError('')
     try {
       const orderId = await createOrder({
+        storeId,
         userId: user?.uid,
         items: buildOrderItems(),
         subtotal: totals.subtotal,
@@ -156,7 +159,7 @@ export function CheckoutPage() {
       })
 
       clearCart()
-      navigate(`/pedido/${orderId}`)
+      navigate(path(`pedido/${orderId}`))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al registrar pedido')
       setProcessing(false)
@@ -168,6 +171,7 @@ export function CheckoutPage() {
     setError('')
     try {
       const orderId = await createOrder({
+        storeId,
         userId: user?.uid,
         items: buildOrderItems(),
         subtotal: totals.subtotal,
@@ -194,7 +198,7 @@ export function CheckoutPage() {
               email: shipping.email,
             })
             clearCart()
-            navigate(`/pedido/${orderId}`)
+            navigate(path(`pedido/${orderId}`))
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Error en el pago')
             setProcessing(false)

@@ -4,6 +4,7 @@ import { getOrder } from '../../services/orders'
 import { OrderStatusBadge } from '../../components/OrderStatusBadge'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { formatSoles } from '../../utils/money'
+import { useStore } from '../../hooks/useStore'
 import type { ManualPaymentMethod, Order } from '../../types'
 
 const MANUAL_METHOD_LABELS: Record<ManualPaymentMethod, string> = {
@@ -13,23 +14,24 @@ const MANUAL_METHOD_LABELS: Record<ManualPaymentMethod, string> = {
 }
 
 export function OrderConfirmPage() {
+  const { storeId, path } = useStore()
   const { id } = useParams<{ id: string }>()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
-    getOrder(id)
+    getOrder(id, storeId)
       .then(setOrder)
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, storeId])
 
   if (loading) return <LoadingSpinner />
   if (!order) {
     return (
       <div className="text-center">
         <p className="text-gray-500">Pedido no encontrado.</p>
-        <Link to="/" className="mt-4 text-brand-600 hover:underline">
+        <Link to={path()} className="mt-4 text-brand-600 hover:underline">
           Ir al inicio
         </Link>
       </div>
@@ -92,7 +94,7 @@ export function OrderConfirmPage() {
         </dl>
       </div>
       <Link
-        to="/cuenta"
+        to={path('cuenta')}
         className="mt-6 inline-block rounded-lg bg-brand-600 px-6 py-3 text-white hover:bg-brand-700"
       >
         Ver mis pedidos

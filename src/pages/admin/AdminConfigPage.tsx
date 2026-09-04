@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStore } from '../../hooks/useStore'
 import { getStoreConfig, updateStoreConfig } from '../../services/store'
 import { LIMA_DISTRITOS } from '../../data/lima-distritos'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
@@ -50,6 +51,7 @@ function normalizeConfigForSave(config: StoreConfig): StoreConfig {
 const STOREFRONT_URL = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href
 
 export function AdminConfigPage() {
+  const { storeId } = useStore()
   const [config, setConfig] = useState<StoreConfig>(DEFAULT_STORE_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -58,10 +60,10 @@ export function AdminConfigPage() {
   const [driveHelpOpen, setDriveHelpOpen] = useState(false)
 
   useEffect(() => {
-    getStoreConfig()
+    getStoreConfig(storeId)
       .then(setConfig)
       .finally(() => setLoading(false))
-  }, [])
+  }, [storeId])
 
   const showSuccessBanner =
     savedConfigJson !== null &&
@@ -72,7 +74,7 @@ export function AdminConfigPage() {
     setSaveError(null)
     try {
       const toSave = normalizeConfigForSave(config)
-      await updateStoreConfig(toSave)
+      await updateStoreConfig(storeId, toSave)
       setConfig(toSave)
       setSavedConfigJson(JSON.stringify(toSave))
     } catch (err) {

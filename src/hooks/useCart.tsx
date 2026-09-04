@@ -8,8 +8,11 @@ import {
   type ReactNode,
 } from 'react'
 import type { CartItem } from '../types'
+import { useStore } from './useStore'
 
-const CART_KEY = 'tiendita_cart'
+function cartKey(storeId: string) {
+  return `cart-${storeId}`
+}
 
 interface CartContextValue {
   items: CartItem[]
@@ -23,10 +26,16 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
-function loadCart(): CartItem[] {
+function loadCart(storeId: string): CartItem[] {
   try {
-    const raw = localStorage.getItem(CART_KEY)
-    return raw ? (JSON.parse(raw) as CartItem[]) : []
+    const raw = localStorage.getItem(cartKey(storeId))
+    if (raw) return JSON.parse(raw) as CartItem[]
+    // Migración desde carrito global legacy solo para tiendita
+    if (storeId === 'tiendita') {
+      const legacy = localStorage.getItem('tiendita_cart')
+      if (legacy) return JSON.parse(legacy) as CartItem[]
+    }
+    return []
   } catch {
     return []
   }
@@ -37,11 +46,16 @@ function itemKey(productId: string, variantName?: string) {
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(loadCart)
+  const { storeId } = useStore()
+  const [items, setItems] = useState<CartItem[]>(() => loadCart(storeId))
 
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(items))
-  }, [items])
+    setItems(loadCart(storeId))
+  }, [storeId])
+
+  useEffect(() => {
+    localStorage.setItem(cartKey(storeId), JSON.stringify(items))
+  }, [items, storeId])
 
   const addItem = useCallback(
     (item: Omit<CartItem, 'quantity'>, quantity = 1) => {

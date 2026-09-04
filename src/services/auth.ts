@@ -8,6 +8,7 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { demoError, isDemoMode } from '../config/demo'
+import { DEFAULT_STORE_ID } from '../config/stores'
 import type { AppUser, UserRole } from '../types'
 
 export async function getUserProfile(uid: string): Promise<AppUser | null> {
@@ -20,6 +21,9 @@ export async function getUserProfile(uid: string): Promise<AppUser | null> {
     email: data.email ?? null,
     displayName: data.displayName ?? null,
     role: (data.role as UserRole) || 'customer',
+    adminStores: Array.isArray(data.adminStores)
+      ? (data.adminStores as string[])
+      : undefined,
     dni: data.dni,
     ruc: data.ruc,
   }
@@ -86,4 +90,17 @@ export async function logOut(): Promise<void> {
 
 export function isAdmin(user: AppUser | null): boolean {
   return user?.role === 'admin'
+}
+
+/**
+ * Admin de una tienda concreta.
+ * - Sin `adminStores`: compatibilidad → solo tienda default.
+ * - Con `adminStores`: debe incluir el storeId.
+ */
+export function isStoreAdmin(user: AppUser | null, storeId: string): boolean {
+  if (!user || user.role !== 'admin') return false
+  if (!user.adminStores || user.adminStores.length === 0) {
+    return storeId === DEFAULT_STORE_ID
+  }
+  return user.adminStores.includes(storeId)
 }

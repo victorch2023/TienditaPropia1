@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useStore } from '../../hooks/useStore'
 import { signIn, signUp, logOut } from '../../services/auth'
 import { getOrdersByUser } from '../../services/orders'
 import { OrderStatusBadge } from '../../components/OrderStatusBadge'
@@ -10,6 +11,7 @@ import type { Order } from '../../types'
 
 export function AccountPage() {
   const { user, loading: authLoading } = useAuth()
+  const { storeId, path } = useStore()
   const [orders, setOrders] = useState<Order[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [email, setEmail] = useState('')
@@ -21,12 +23,12 @@ export function AccountPage() {
   useEffect(() => {
     if (user) {
       setLoadingOrders(true)
-      getOrdersByUser(user.uid)
+      getOrdersByUser(user.uid, storeId)
         .then(setOrders)
         .catch(() => setOrders([]))
         .finally(() => setLoadingOrders(false))
     }
-  }, [user])
+  }, [user, storeId])
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -130,7 +132,7 @@ export function AccountPage() {
                 {formatSoles(order.total)}
               </p>
               <Link
-                to={`/pedido/${order.id}`}
+                to={path(`pedido/${order.id}`)}
                 className="mt-2 inline-block text-sm text-brand-600 hover:underline"
               >
                 Ver detalle

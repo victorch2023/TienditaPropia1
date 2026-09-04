@@ -11,58 +11,98 @@ import {
   orderBy,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import {
-  DEMO_PRODUCTS,
-  demoError,
-  isDemoMode,
-} from '../config/demo'
+import { demoError, isDemoMode } from '../config/demo'
+import { belongsToStore, getDemoProducts } from '../config/stores'
 import type { Product } from '../types'
 import { stripUndefined } from '../utils/firestore'
 
 const COL = 'products'
 
-export async function getProducts(activeOnly = false): Promise<Product[]> {
-  if (isDemoMode()) {
-    return activeOnly ? DEMO_PRODUCTS.filter((p) => p.active) : [...DEMO_PRODUCTS]
+export async function getProducts(
+  storeId: string,
+  activeOnly = false
+): Promise<Product[]> {
+  if (isDemoMode()) return getDemoProducts(storeId, activeOnly)
+
+  try {
+    let q = query(
+      collection(db, COL),
+      where('storeId', '==', storeId),
+      orderBy('createdAt', 'desc')
+    )
+    if (activeOnly) {
+      q = query(
+        collection(db, COL),
+        where('storeId', '==', storeId),
+        where('active', '==', true),
+        orderBy('createdAt', 'desc')
+      )
+    }
+    const snap = await getDocs(q)
+    const withStore = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product))
+
+    // Migración: docs sin storeId = tienda default
+    if (storeId === 'tiendita') {
+      const all = await getDocs(query(collection(db, COL), orderBy('createdAt', 'desc')))
+      const legacy = all.docs
+        .map((d) => ({ id: d.id, ...d.data() } as Product))
+        .filter((p) => !p.storeId)
+        .filter((p) => !activeOnly || p.active)
+      const ids = new Set(withStore.map((p) => p.id))
+      return [...withStore, ...legacy.filter((p) => !ids.has(p.id))]
+    }
+    return withStore
+  } catch {
+    const snap = await getDocs(query(collection(db, COL), orderBy('createdAt', 'desc')))
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as Product))
+      .filter((p) => belongsToStore(p, storeId))
+      .filter((p) => !activeOnly || p.active)
   }
-  let q = query(collection(db, COL), orderBy('createdAt', 'desc'))
-  if (activeOnly) {
-    q = query(collection(db, COL), where('active', '==', true), orderBy('createdAt', 'desc'))
-  }
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product))
 }
 
-export async function getProductsByCategory(categoryId: string): Promise<Product[]> {
+export async function getProductsByCategory(
+  storeId: string,
+  categoryId: string
+): Promise<Product[]> {
   if (isDemoMode()) {
-    return DEMO_PRODUCTS.filter((p) => p.categoryId === categoryId && p.active)
+    return getDemoProducts(storeId, true).filter((p) => p.categoryId === categoryId)
   }
-  const q = query(
-    collection(db, COL),
-    where('categoryId', '==', categoryId),
-    where('active', '==', true)
-  )
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product))
+  const all = await getProducts(storeId, true)
+  return all.filter((p) => p.categoryId === categoryId)
 }
 
-export async function getProduct(id: string): Promise<Product | null> {
+export async function getProduct(
+  storeId: string,
+  id: string
+): Promise<Product | null> {
   if (isDemoMode()) {
-    return DEMO_PRODUCTS.find((p) => p.id === id) ?? null
+    return getDemoProducts(storeId).find((p) => p.id === id) ?? null
   }
   const snap = await getDoc(doc(db, COL, id))
   if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() } as Product
+  const product = { id: snap.id, ...snap.data() } as Product
+  if (!belongsToStore(product, storeId)) return null
+  return product
 }
 
-export async function createProduct(data: Omit<Product, 'id'>): Promise<string> {
+export async function createProduct(
+  storeId: string,
+  data: Omit<Product, 'id' | 'storeId'>
+): Promise<string> {
   if (isDemoMode()) throw demoError('Crear productos')
   const refDoc = doc(collection(db, COL))
-  await setDoc(refDoc, stripUndefined({ ...data, createdAt: Date.now() }))
+  await setDoc(
+    refDoc,
+    stripUndefined({ ...data, storeId, createdAt: Date.now() })
+  )
   return refDoc.id
 }
 
-export async function updateProduct(id: string, data: Partial<Product>): Promise<void> {
+export async function updateProduct(
+  id: string,
+  data: Partial<Product>
+): Promise<void> {
   if (isDemoMode()) throw demoError('Editar productos')
   await updateDoc(doc(db, COL, id), stripUndefined({ ...data, updatedAt: Date.now() }))
 }

@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { demoError, isDemoMode } from '../config/demo'
+import { belongsToStore } from '../config/stores'
 import { stripUndefined } from '../utils/firestore'
 import type { Order, OrderPayment, OrderStatus } from '../types'
 
@@ -43,10 +44,11 @@ export async function updateOrderPayment(
   )
 }
 
-export async function getOrder(id: string): Promise<Order | null> {
+export async function getOrder(id: string, storeId?: string): Promise<Order | null> {
   if (isDemoMode() && id === DEMO_ORDER_ID) {
     return {
       id: DEMO_ORDER_ID,
+      storeId: storeId || 'tiendita',
       items: [],
       subtotal: 0,
       igv: 0,
@@ -75,7 +77,9 @@ export async function getOrder(id: string): Promise<Order | null> {
   if (isDemoMode()) return null
   const snap = await getDoc(doc(db, COL, id))
   if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() } as Order
+  const order = { id: snap.id, ...snap.data() } as Order
+  if (storeId && !belongsToStore(order, storeId)) return null
+  return order
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<void> {
@@ -99,7 +103,10 @@ export async function updateOrderFiscalStatus(
   )
 }
 
-export async function getOrdersByUser(userId: string): Promise<Order[]> {
+export async function getOrdersByUser(
+  userId: string,
+  storeId?: string
+): Promise<Order[]> {
   if (isDemoMode()) return []
   const q = query(
     collection(db, COL),
@@ -107,14 +114,38 @@ export async function getOrdersByUser(userId: string): Promise<Order[]> {
     orderBy('createdAt', 'desc')
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order))
+  const orders = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order))
+  if (!storeId) return orders
+  return orders.filter((o) => belongsToStore(o, storeId))
 }
 
-export async function getAllOrders(): Promise<Order[]> {
+export async function getAllOrders(storeId: string): Promise<Order[]> {
   if (isDemoMode()) return []
-  const q = query(collection(db, COL), orderBy('createdAt', 'desc'))
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order))
+  try {
+    const q = query(
+      collection(db, COL),
+      where('storeId', '==', storeId),
+      orderBy('createdAt', 'desc')
+    )
+    const snap = await getDocs(q)
+    const withStore = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order))
+    if (storeId === 'tiendita') {
+      const all = await getDocs(query(collection(db, COL), orderBy('createdAt', 'desc')))
+      const legacy = all.docs
+        .map((d) => ({ id: d.id, ...d.data() } as Order))
+        .filter((o) => !o.storeId)
+      const ids = new Set(withStore.map((o) => o.id))
+      return [...withStore, ...legacy.filter((o) => !ids.has(o.id))].sort(
+        (a, b) => b.createdAt - a.createdAt
+      )
+    }
+    return withStore
+  } catch {
+    const snap = await getDocs(query(collection(db, COL), orderBy('createdAt', 'desc')))
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as Order))
+      .filter((o) => belongsToStore(o, storeId))
+  }
 }
 
 export async function confirmManualPayment(orderId: string): Promise<void> {

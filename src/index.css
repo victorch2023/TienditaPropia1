@@ -7,3 +7,47 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+.font-citro-serif {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+.font-citro-sans {
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+}
+
+@keyframes citro-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.citro-marquee {
+  animation: citro-marquee 28s linear infinite;
+  width: max-content;
+}
+
+@keyframes citro-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.citro-fade-in {
+  animation: citro-fade-in 0.9s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .citro-marquee,
+  .citro-fade-in {
+    animation: none;
+  }
+}

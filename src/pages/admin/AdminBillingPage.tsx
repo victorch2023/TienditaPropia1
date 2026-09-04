@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStore } from '../../hooks/useStore'
 import { getAllOrders, updateOrderFiscalStatus } from '../../services/orders'
 import { FUNCTIONS_URL } from '../../services/firebase'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
@@ -6,6 +7,7 @@ import { formatSoles } from '../../utils/money'
 import type { Order } from '../../types'
 
 export function AdminBillingPage() {
+  const { storeId } = useStore()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'pendiente' | 'emitido' | 'all'>('pendiente')
@@ -13,7 +15,7 @@ export function AdminBillingPage() {
 
   const load = () => {
     setLoading(true)
-    getAllOrders()
+    getAllOrders(storeId)
       .then((all) =>
         setOrders(all.filter((o) => o.status !== 'pendiente_pago' && o.status !== 'cancelado'))
       )
@@ -22,7 +24,7 @@ export function AdminBillingPage() {
 
   useEffect(() => {
     load()
-  }, [])
+  }, [storeId])
 
   const filtered = orders.filter((o) => {
     if (filter === 'all') return true

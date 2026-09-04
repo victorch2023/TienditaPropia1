@@ -1,8 +1,53 @@
-# Mi Tiendita — Tienda Virtual Perú
+# TienditaPropia — Multi-tienda (Perú)
 
-Tienda virtual completa desplegada en **GitHub Pages** con backend **Firebase** (Firestore, Auth, Cloud Functions). **Imágenes vía Google Drive** (carpeta pública + URLs en Firestore) — no requiere Firebase Storage ni plan Blaze. Pagos por defecto vía **Yape, Plin y transferencias bancarias**; pasarela **Culqi** opcional para el futuro. Envíos solo en **Lima Metropolitana** (43 distritos).
+Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`) y **Citroleaf** (`citroleaf`). Imágenes vía Google Drive / URLs públicas. Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
 
-**URL de producción:** `https://<tu-usuario>.github.io/TienditaPropia1/`
+**URL de producción:** `https://victorch2023.github.io/TienditaPropia1/`
+
+### URLs de tiendas
+
+| Tienda | Storefront | Admin |
+|--------|------------|-------|
+| Selector | `/` o `/tiendas` | — |
+| La Tiendita Chévere | `/s/tiendita` | `/s/tiendita/admin` |
+| Citroleaf | `/s/citroleaf` | `/s/citroleaf/admin` |
+
+Base Vite: `/TienditaPropia1/` (GitHub Pages).
+
+---
+
+## Arquitectura multi-tienda
+
+- Documento de config: `stores/{storeId}` (legacy `stores/config` sigue leyéndose para `tiendita`)
+- `products`, `categories`, `orders` llevan `storeId`
+- Carrito por tienda: `localStorage` key `cart-{storeId}`
+- Routing: `/s/:storeId/*` para vitrina y admin
+- Usuarios admin: `role: 'admin'` + `adminStores: ['tiendita','citroleaf']`
+  - Sin `adminStores`: solo admin de `tiendita` (compatibilidad)
+- Citroleaf home: estética cream/brown (Cormorant + Montserrat), independiente de tiendita
+- Modo demo: ambas tiendas con catálogo mock offline
+
+### Asignar admin de Citroleaf
+
+En Firestore → `users/{uid}`:
+
+```json
+{
+  "role": "admin",
+  "adminStores": ["tiendita", "citroleaf"]
+}
+```
+
+O ejecuta `npm run seed:citroleaf` (añade ambos IDs a todos los admins existentes).
+
+### Seed
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="/ruta/serviceAccountKey.json"
+npm run seed              # tiendita (+ stores/tiendita)
+npm run seed:citroleaf    # migra legacy + siembra Citroleaf + parchea admins
+firebase deploy --only firestore:rules,firestore:indexes
+```
 
 ---
 
@@ -11,7 +56,7 @@ Tienda virtual completa desplegada en **GitHub Pages** con backend **Firebase** 
 - App React + Vite + Tailwind con tienda, carrito, checkout y panel admin
 - **Modo demo**: sin `.env` o con valores de ejemplo, la app muestra productos/categorías mock
 - Script `npm run setup-check` — verifica Node, npm y variables de entorno
-- Script `npm run seed` + `scripts/seed-data.json` — datos iniciales para Firestore
+- Scripts `npm run seed` / `npm run seed:citroleaf`
 - `firebase.json`, reglas Firestore/Storage, índices y `.firebaserc.example`
 - Cloud Functions (Culqi + facturación stub), workflow GitHub Pages
 - Página 404, favicon, meta tags y `.env.example` comentado en español
@@ -29,9 +74,9 @@ Tienda virtual completa desplegada en **GitHub Pages** con backend **Firebase** 
 | 5 | `cp .firebaserc.example .firebaserc` y poner tu `projectId` |
 | 6 | `firebase login` y `firebase deploy --only firestore:rules,firestore:indexes` |
 | 7 | Crear carpeta pública en Google Drive para imágenes de productos (ver sección abajo) |
-| 8 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed` para productos de ejemplo |
-| 9 | Registrarte en `/cuenta` y cambiar `role` a `admin` en Firestore `users/{uid}` |
-| 10 | Configurar Yape/Plin/cuenta bancaria en `/admin/config` |
+| 8 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed` y `npm run seed:citroleaf` |
+| 9 | Registrarte en `/s/tiendita/cuenta` y poner `role=admin` + `adminStores` |
+| 10 | Configurar Yape/Plin en `/s/{storeId}/admin/config` |
 | 11 | (Opcional futuro) Cuenta Culqi, desplegar functions, activar pasarela en admin |
 | 12 | Habilitar GitHub Pages (Actions) y agregar secrets `VITE_*` en el repo |
 

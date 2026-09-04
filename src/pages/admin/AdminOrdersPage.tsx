@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useStore } from '../../hooks/useStore'
 import {
   getAllOrders,
   updateOrderStatus,
@@ -25,6 +26,7 @@ const NEXT_STATUSES: Partial<Record<OrderStatus, OrderStatus[]>> = {
 }
 
 export function AdminOrdersPage() {
+  const { storeId } = useStore()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Order | null>(null)
@@ -32,20 +34,20 @@ export function AdminOrdersPage() {
 
   const load = () => {
     setLoading(true)
-    getAllOrders()
+    getAllOrders(storeId)
       .then(setOrders)
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
     load()
-  }, [])
+  }, [storeId])
 
   const handleConfirmPayment = async (orderId: string) => {
     await confirmManualPayment(orderId)
     load()
     if (selected?.id === orderId) {
-      const updated = await getAllOrders()
+      const updated = await getAllOrders(storeId)
       setSelected(updated.find((o) => o.id === orderId) || null)
     }
   }
@@ -54,7 +56,7 @@ export function AdminOrdersPage() {
     await updateOrderStatus(orderId, status)
     load()
     if (selected?.id === orderId) {
-      const updated = await getAllOrders()
+      const updated = await getAllOrders(storeId)
       setSelected(updated.find((o) => o.id === orderId) || null)
     }
   }

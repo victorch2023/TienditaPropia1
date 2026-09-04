@@ -67,17 +67,30 @@ async function seedFirestore() {
   )
   console.log('✓ stores/config')
 
+  await db.doc('stores/tiendita').set(
+    {
+      ...seed.storeConfig,
+      slug: 'tiendita',
+      active: true,
+      name: seed.storeConfig.name || 'La Tiendita Chévere',
+      updatedAt: now,
+    },
+    { merge: true }
+  )
+  console.log('✓ stores/tiendita')
+
   for (const cat of seed.categories) {
-    await db.doc(`categories/${cat.id}`).set({ ...cat, createdAt: now })
+    await db.doc(`categories/${cat.id}`).set({ ...cat, storeId: 'tiendita', createdAt: now })
     console.log(`✓ categories/${cat.id}`)
   }
 
   for (const prod of seed.products) {
-    await db.doc(`products/${prod.id}`).set({ ...prod, createdAt: now })
+    await db.doc(`products/${prod.id}`).set({ ...prod, storeId: 'tiendita', createdAt: now })
     console.log(`✓ products/${prod.id}`)
   }
 
-  console.log('\nListo. Crea tu usuario admin en Firebase Auth y cambia role a "admin" en users/{uid}.')
+  console.log('\nListo. Crea tu usuario admin y pon role=admin + adminStores=["tiendita","citroleaf"].')
+  console.log('Para Citroleaf: npm run seed:citroleaf')
 }
 
 seedFirestore().catch((err) => {

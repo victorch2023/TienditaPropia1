@@ -10,30 +10,42 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { DEMO_CATEGORIES, demoError, isDemoMode } from '../config/demo'
+import { demoError, isDemoMode } from '../config/demo'
+import { belongsToStore, getDemoCategories } from '../config/stores'
 import type { Category } from '../types'
 import { stripUndefined } from '../utils/firestore'
 
 const COL = 'categories'
 
-export async function getCategories(): Promise<Category[]> {
-  if (isDemoMode()) return [...DEMO_CATEGORIES]
-  const q = query(collection(db, COL), orderBy('order', 'asc'))
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Category))
+export async function getCategories(storeId: string): Promise<Category[]> {
+  if (isDemoMode()) return getDemoCategories(storeId)
+  const snap = await getDocs(query(collection(db, COL), orderBy('order', 'asc')))
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Category))
+    .filter((c) => belongsToStore(c, storeId))
 }
 
-export async function getCategory(id: string): Promise<Category | null> {
-  if (isDemoMode()) return DEMO_CATEGORIES.find((c) => c.id === id) ?? null
+export async function getCategory(
+  storeId: string,
+  id: string
+): Promise<Category | null> {
+  if (isDemoMode()) {
+    return getDemoCategories(storeId).find((c) => c.id === id) ?? null
+  }
   const snap = await getDoc(doc(db, COL, id))
   if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() } as Category
+  const cat = { id: snap.id, ...snap.data() } as Category
+  if (!belongsToStore(cat, storeId)) return null
+  return cat
 }
 
-export async function createCategory(data: Omit<Category, 'id'>): Promise<string> {
+export async function createCategory(
+  storeId: string,
+  data: Omit<Category, 'id' | 'storeId'>
+): Promise<string> {
   if (isDemoMode()) throw demoError('Crear categorías')
   const ref = doc(collection(db, COL))
-  await setDoc(ref, stripUndefined({ ...data, createdAt: Date.now() }))
+  await setDoc(ref, stripUndefined({ ...data, storeId, createdAt: Date.now() }))
   return ref.id
 }
 
