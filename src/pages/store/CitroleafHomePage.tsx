@@ -2,20 +2,16 @@ import { Link } from 'react-router-dom'
 import { ProductCard } from '../../components/ProductCard'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { useProducts } from '../../hooks/useProducts'
-import { useCategories } from '../../hooks/useCategories'
 import { useStore } from '../../hooks/useStore'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
 import heroLeft from '../../assets/citroleaf/hero-left.jpg'
 import heroRight from '../../assets/citroleaf/hero-right.jpg'
+import tileCitronela from '../../assets/citroleaf/tile-citronela.jpg'
+import tileSachaInchi from '../../assets/citroleaf/tile-sacha-inchi.jpg'
+import tilePaloSanto from '../../assets/citroleaf/tile-palo-santo.jpg'
 
 const LIFESTYLE =
   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&h=900&fit=crop'
-const TILE_NEW =
-  'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=600&h=700&fit=crop'
-const TILE_SHOP =
-  'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=700&fit=crop'
-const TILE_KITS =
-  'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&h=700&fit=crop'
 
 function Marquee({ text }: { text: string }) {
   const strip = Array.from({ length: 8 }, () => text).join(' ')
@@ -33,7 +29,6 @@ function Marquee({ text }: { text: string }) {
 
 export function CitroleafHomePage() {
   const { products, loading } = useProducts(true)
-  const { categories } = useCategories()
   const { config } = useStoreConfig()
   const { path } = useStore()
   const featured = products.slice(0, 4)
@@ -140,45 +135,30 @@ export function CitroleafHomePage() {
         </div>
       </section>
 
-      {/* Dark category tiles */}
+      {/* Ingredient tiles — informational only */}
       <section className="grid gap-3 bg-[#F2F0EB] p-4 md:grid-cols-3 md:gap-4 md:p-8">
         {[
-          {
-            label: 'Spray',
-            href: path('catalogo?categoria=repelentes-spray'),
-            img: TILE_SHOP,
-            sub: categories.find((c) => c.slug === 'repelentes-spray')?.name || 'Hierba luisa',
-          },
-          {
-            label: 'Sólido',
-            href: path('catalogo?categoria=repelentes-solidos'),
-            img: TILE_NEW,
-            sub: 'Sacha inchi',
-          },
-          {
-            label: 'Kits',
-            href: path('catalogo?categoria=kits'),
-            img: TILE_KITS,
-            sub: 'Packs',
-          },
+          { label: 'Citronela', img: tileCitronela },
+          { label: 'Sacha Inchi', img: tileSachaInchi },
+          { label: 'Palo Santo', img: tilePaloSanto },
         ].map((tile) => (
-          <Link
+          <div
             key={tile.label}
-            to={tile.href}
             className="group relative flex min-h-[280px] items-center justify-center overflow-hidden bg-[#261F1A]"
           >
             <img
               src={tile.img}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover opacity-50 transition duration-500 group-hover:scale-110 group-hover:opacity-40"
+              alt={tile.label}
+              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
-            <div className="relative z-10 text-center text-[#F2F0EB]">
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/30 to-black/15"
+              aria-hidden
+            />
+            <div className="relative z-10 text-center text-white">
               <span className="font-citro-serif text-4xl md:text-5xl">{tile.label}</span>
-              <p className="mt-2 text-[10px] uppercase tracking-[0.28em] opacity-80">
-                {tile.sub}
-              </p>
             </div>
-          </Link>
+          </div>
         ))}
       </section>
 
