@@ -3,6 +3,10 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        'citro-serif': ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        'citro-sans': ['Montserrat', 'system-ui', 'sans-serif'],
+      },
       colors: {
         brand: {
           50: 'var(--brand-50, #eff6ff)',
@@ -11,6 +15,10 @@ export default {
           600: 'var(--brand-600, #2563eb)',
           700: 'var(--brand-700, #1d4ed8)',
           900: 'var(--brand-900, #1e3a8a)',
+        },
+        citro: {
+          cream: '#F2F0EB',
+          brown: '#261F1A',
         },
       },
     },
