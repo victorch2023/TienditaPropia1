@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { DemoBanner } from './DemoBanner'
@@ -7,13 +7,20 @@ import { useStoreConfig } from '../hooks/useStoreConfig'
 import { CITROLEAF_STORE_ID } from '../config/stores'
 import { getStoreBackgroundStyle, getStoreThemeStyle } from '../utils/theme'
 
+function isStoreHomePath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, '') || '/'
+  return normalized === '/' || /\/s\/[^/]+$/.test(normalized)
+}
+
 export function StoreLayout() {
   const { storeId } = useStore()
   const { config } = useStoreConfig()
+  const { pathname } = useLocation()
   const themeStyle = getStoreThemeStyle(config)
   const backgroundStyle = getStoreBackgroundStyle(config)
   const hasBackground = Boolean(config.backgroundImageUrl?.trim())
   const isCitroleaf = storeId === CITROLEAF_STORE_ID
+  const isHome = isStoreHomePath(pathname)
 
   if (isCitroleaf) {
     return (
@@ -23,7 +30,8 @@ export function StoreLayout() {
       >
         <DemoBanner />
         <Header />
-        <main className="w-full flex-1 px-4 py-6">
+        {/* Home: sin padding lateral para hero a sangre; resto de rutas conserva gutter */}
+        <main className={`w-full flex-1 ${isHome ? 'px-0 py-0' : 'px-4 py-6'}`}>
           <Outlet />
         </main>
       </div>

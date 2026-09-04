@@ -34,21 +34,21 @@ export function CitroleafHomePage() {
   const featured = products.slice(0, 4)
 
   return (
-    <div className="-mx-4 -my-6 bg-[#F2F0EB] text-[#261F1A] md:-mx-4">
-      {/* Hero split */}
-      <section className="citro-fade-in grid min-h-[70vh] md:grid-cols-2">
-        <div className="relative min-h-[320px] overflow-hidden bg-[#E8E4DC] md:min-h-0">
+    <div className="bg-[#F2F0EB] text-[#261F1A]">
+      {/* Hero split — ambas mitades a sangre, misma estructura de contenedor */}
+      <section className="citro-fade-in grid w-full min-h-[70vh] md:grid-cols-2">
+        <div className="relative h-full min-h-[70vh] w-full overflow-hidden">
           <img
             src={heroLeft}
             alt="Citroleaf Organic Repellent — natural por elección"
-            className="absolute inset-0 h-full w-full object-cover object-[center_40%] transition duration-700 hover:scale-105"
+            className="absolute inset-0 block h-full min-h-full w-full min-w-full max-w-none object-cover object-center"
           />
         </div>
-        <div className="relative flex min-h-[320px] flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:min-h-0 md:px-14">
+        <div className="relative flex h-full min-h-[70vh] w-full flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:px-14">
           <img
             src={heroRight}
             alt=""
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+            className="pointer-events-none absolute inset-0 block h-full min-h-full w-full min-w-full max-w-none object-cover object-center"
           />
           <div
             className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/30 to-black/15"
