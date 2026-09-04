@@ -6,9 +6,8 @@ import { useCategories } from '../../hooks/useCategories'
 import { useStore } from '../../hooks/useStore'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
 import heroLeft from '../../assets/citroleaf/hero-left.jpg'
+import heroRight from '../../assets/citroleaf/hero-right.jpg'
 
-const HERO_CITRUS =
-  'https://images.unsplash.com/photo-1590502593747-42a996133562?w=700&h=900&fit=crop'
 const LIFESTYLE =
   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&h=900&fit=crop'
 const TILE_NEW =
@@ -50,26 +49,30 @@ export function CitroleafHomePage() {
             className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 hover:scale-105"
           />
         </div>
-        <div className="relative flex flex-col justify-center gap-6 px-8 py-16 md:px-14">
+        <div className="relative flex min-h-[320px] flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:min-h-0 md:px-14">
           <img
-            src={HERO_CITRUS}
+            src={heroRight}
             alt=""
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
           />
-          <div className="relative">
-            <p className="mb-3 text-[11px] uppercase tracking-[0.3em] text-[#261F1A]/70">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/30 to-black/15"
+            aria-hidden
+          />
+          <div className="relative text-white">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.3em] text-white/80">
               Lima · Protección orgánica
             </p>
             <h1 className="font-citro-serif text-5xl leading-[0.95] tracking-tight md:text-7xl">
               Citroleaf
             </h1>
-            <p className="mt-5 max-w-md text-sm leading-relaxed text-[#261F1A]/80 md:text-base">
+            <p className="mt-5 max-w-md text-sm leading-relaxed text-white/85 md:text-base">
               {config.description ||
                 'Protección natural para tu piel y para tu planeta'}
             </p>
             <Link
               to={path('catalogo')}
-              className="mt-8 inline-block bg-[#261F1A] px-8 py-3.5 text-[11px] font-medium uppercase tracking-[0.25em] text-[#F2F0EB] transition hover:bg-[#3d342c]"
+              className="mt-8 inline-block border border-white px-8 py-3.5 text-[11px] font-medium uppercase tracking-[0.25em] text-white transition hover:bg-white hover:text-[#261F1A]"
             >
               Shop now
             </Link>
