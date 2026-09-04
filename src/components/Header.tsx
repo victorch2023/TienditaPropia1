@@ -101,7 +101,7 @@ function CitroleafHeader({
                 Catálogo
               </Link>
               <Link
-                to={path('catalogo?categoria=repelentes')}
+                to={path('catalogo?categoria=repelentes-spray')}
                 className="transition hover:text-[#261F1A]"
               >
                 Repelentes

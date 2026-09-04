@@ -67,7 +67,7 @@ export function CitroleafHomePage() {
             </h1>
             <p className="mt-5 max-w-md text-sm leading-relaxed text-[#261F1A]/80 md:text-base">
               {config.description ||
-                'Protección natural para tu piel y para tu planeta.'}
+                'Protección natural para tu piel y para tu planeta'}
             </p>
             <Link
               to={path('catalogo')}
@@ -79,17 +79,17 @@ export function CitroleafHomePage() {
         </div>
       </section>
 
-      <Marquee text="Citronella natural • Hierba luisa • Protección orgánica •" />
+      <Marquee text="Hierba luisa • Sacha inchi • Contra zancudos • Protección orgánica •" />
 
       {/* Intro */}
       <section className="citro-fade-in mx-auto max-w-2xl px-6 py-16 text-center md:py-20">
         <h2 className="font-citro-serif text-3xl md:text-4xl">
-          Protección natural para tu piel
+          Protección natural para tu piel y para tu planeta
         </h2>
         <p className="mt-5 text-sm leading-relaxed text-[#261F1A]/75 md:text-base">
-          Repelentes de origen vegetal inspirados en la citronela y la hierba luisa.
-          Pensados en Lima, para que los zancudos no interrumpan tus noches — ni tu
-          compromiso con el planeta.
+          Spray orgánico de hierba luisa y repelente sólido con sacha inchi.
+          Empresa estudiantil Junior Achievement Perú 2026 — protección sostenible
+          contra zancudos, hecha en Lima.
         </p>
       </section>
 
@@ -143,16 +143,16 @@ export function CitroleafHomePage() {
       <section className="grid gap-3 bg-[#F2F0EB] p-4 md:grid-cols-3 md:gap-4 md:p-8">
         {[
           {
-            label: 'New',
-            href: path('catalogo'),
-            img: TILE_NEW,
-            sub: categories[0]?.name || 'Novedades',
+            label: 'Spray',
+            href: path('catalogo?categoria=repelentes-spray'),
+            img: TILE_SHOP,
+            sub: categories.find((c) => c.slug === 'repelentes-spray')?.name || 'Hierba luisa',
           },
           {
-            label: 'Shop',
-            href: path('catalogo?categoria=repelentes'),
-            img: TILE_SHOP,
-            sub: 'Repelentes',
+            label: 'Sólido',
+            href: path('catalogo?categoria=repelentes-solidos'),
+            img: TILE_NEW,
+            sub: 'Sacha inchi',
           },
           {
             label: 'Kits',
