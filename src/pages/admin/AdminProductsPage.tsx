@@ -30,7 +30,7 @@ export function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
-  const [form, setForm] = useState(emptyProduct)
+  const [form, setForm] = useState(() => ({ ...emptyProduct }))
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
@@ -69,7 +69,7 @@ export function AdminProductsPage() {
       setImageUrls(product.images.length > 0 ? [...product.images] : [])
     } else {
       setEditing('new')
-      setForm(emptyProduct)
+      setForm({ ...emptyProduct })
       setImageUrls([])
     }
     setUploadProgress(null)
@@ -216,9 +216,18 @@ export function AdminProductsPage() {
             />
             <input
               placeholder="Stock"
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              name="product-stock"
               value={form.stock}
-              onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '' || /^\d+$/.test(raw)) {
+                  setForm({ ...form, stock: raw })
+                }
+              }}
               className="rounded-lg border px-3 py-2 text-sm"
             />
             <input
