@@ -41,7 +41,7 @@ export function CitroleafHomePage() {
           <img
             src={heroLeft}
             alt="Citroleaf Organic Repellent — natural por elección"
-            className="absolute inset-0 h-full w-full object-contain object-center transition duration-700 hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover object-[center_40%] transition duration-700 hover:scale-105"
           />
         </div>
         <div className="relative flex min-h-[320px] flex-col justify-center gap-6 overflow-hidden px-8 py-16 md:min-h-0 md:px-14">
