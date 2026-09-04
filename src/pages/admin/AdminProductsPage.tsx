@@ -18,7 +18,7 @@ const emptyProduct = {
   name: '',
   description: '',
   priceSoles: '',
-  stock: 0,
+  stock: '',
   sku: '',
   categoryId: '',
   active: true,
@@ -61,7 +61,7 @@ export function AdminProductsPage() {
         name: product.name,
         description: product.description,
         priceSoles: (product.price / 100).toFixed(2),
-        stock: product.stock,
+        stock: String(product.stock),
         sku: product.sku || '',
         categoryId: product.categoryId,
         active: product.active,
@@ -94,7 +94,7 @@ export function AdminProductsPage() {
         name: form.name,
         description: form.description,
         price: solesToCentavos(parseFloat(form.priceSoles) || 0),
-        stock: form.stock,
+        stock: parseInt(form.stock, 10) || 0,
         sku: form.sku,
         categoryId: form.categoryId,
         images,
@@ -218,7 +218,7 @@ export function AdminProductsPage() {
               placeholder="Stock"
               type="number"
               value={form.stock}
-              onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
+              onChange={(e) => setForm({ ...form, stock: e.target.value })}
               className="rounded-lg border px-3 py-2 text-sm"
             />
             <input
