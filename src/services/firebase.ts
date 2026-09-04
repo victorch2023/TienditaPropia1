@@ -9,12 +9,12 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-api-key',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo.firebaseapp.com',
   projectId,
-  // Si falta el bucket en .env, usa el del proyecto (producción: tiendita-propia).
+  // Bucket real del proyecto (Console → Storage). Nuevo formato: *.firebasestorage.app
   storageBucket:
     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
     (projectId !== 'demo-project'
-      ? `${projectId}.appspot.com`
-      : 'tiendita-propia.appspot.com'),
+      ? `${projectId}.firebasestorage.app`
+      : 'tiendita-propia.firebasestorage.app'),
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '000000000',
   appId: import.meta.env.VITE_FIREBASE_APP_ID || 'demo-app-id',
 }

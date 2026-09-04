@@ -3,28 +3,46 @@ rules_version = '2';
 // Binarios aquí; las URLs de descarga se guardan en Firestore (products.images).
 service firebase.storage {
   match /b/{bucket}/o {
+    function userPath() {
+      return /databases/(default)/documents/users/$(request.auth.uid);
+    }
+
     function userDoc() {
-      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+      return firestore.get(userPath()).data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     function isAdmin() {
-      return request.auth != null && userDoc().role == 'admin';
+      return isSignedIn()
+        && firestore.exists(userPath())
+        && userDoc().role == 'admin';
     }
 
     /**
-     * Admin de una tienda (misma lógica que firestore.rules).
+     * Admin de una tienda (alineado con firestore.rules / auth.ts).
+     * - Con adminStores no vacío: debe incluir storeId.
+     * - Sin adminStores o vacío: solo tiendita / config (legacy).
      */
     function isStoreAdmin(storeId) {
-      return request.auth != null
-        && userDoc().role == 'admin'
+      return isAdmin()
         && (
-          (userDoc().keys().hasAny(['adminStores'])
-            && storeId in userDoc().adminStores)
-          || (!userDoc().keys().hasAny(['adminStores'])
-            && (storeId == 'tiendita' || storeId == 'config'))
-          || (userDoc().keys().hasAny(['adminStores'])
-            && userDoc().adminStores.size() == 0
-            && (storeId == 'tiendita' || storeId == 'config'))
+          (
+            'adminStores' in userDoc()
+            && userDoc().adminStores is list
+            && userDoc().adminStores.size() > 0
+            && storeId in userDoc().adminStores
+          )
+          || (
+            (
+              !('adminStores' in userDoc())
+              || !(userDoc().adminStores is list)
+              || userDoc().adminStores.size() == 0
+            )
+            && (storeId == 'tiendita' || storeId == 'config')
+          )
         );
     }
 

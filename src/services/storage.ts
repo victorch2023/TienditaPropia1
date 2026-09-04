@@ -50,26 +50,34 @@ export function mapStorageError(err: unknown): Error {
  * Sube una imagen de producto a Firebase Storage y devuelve la URL de descarga.
  * Path: stores/{storeId}/products/{productId}/… o stores/{storeId}/uploads/{uid}/… si aún no hay productId.
  */
-export function uploadProductImage(
+export async function uploadProductImage(
   storeId: string,
   file: File,
   productId?: string,
   onProgress?: (percent: number) => void
 ): Promise<string> {
   if (isDemoMode()) {
-    return Promise.reject(demoError('Subir imágenes'))
+    throw demoError('Subir imágenes')
   }
 
   if (!file.type.startsWith('image/')) {
-    return Promise.reject(new Error('Solo se permiten archivos de imagen (JPG, PNG, WebP, etc.).'))
+    throw new Error('Solo se permiten archivos de imagen (JPG, PNG, WebP, etc.).')
   }
   if (file.size > MAX_BYTES) {
-    return Promise.reject(new Error('La imagen supera el límite de 10 MB.'))
+    throw new Error('La imagen supera el límite de 10 MB.')
   }
 
-  const uid = auth.currentUser?.uid
-  if (!uid) {
-    return Promise.reject(new Error('Debes iniciar sesión para subir imágenes.'))
+  const user = auth.currentUser
+  if (!user) {
+    throw new Error('Debes iniciar sesión para subir imágenes.')
+  }
+  const uid = user.uid
+
+  // Asegura token fresco para que Storage evalúe request.auth correctamente.
+  try {
+    await user.getIdToken(/* forceRefresh */ true)
+  } catch {
+    /* si falla el refresh, el upload usará el token en caché */
   }
 
   const id =
@@ -85,7 +93,7 @@ export function uploadProductImage(
 
   const storageRef = ref(storage, path)
   const task = uploadBytesResumable(storageRef, file, {
-    contentType: file.type,
+    contentType: file.type || 'image/jpeg',
   })
 
   return new Promise((resolve, reject) => {

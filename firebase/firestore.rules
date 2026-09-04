@@ -12,19 +12,26 @@ service cloud.firestore {
     /**
      * Admin de una tienda.
      * - Si adminStores existe y no está vacío: debe incluir storeId.
-     * - Si falta adminStores: compatibilidad → admin global solo para tiendita / config legacy.
+     * - Si falta adminStores o está vacío: solo tiendita / config (legacy).
      */
     function isStoreAdmin(storeId) {
       return request.auth != null
         && userDoc().role == 'admin'
         && (
-          (userDoc().keys().hasAny(['adminStores'])
-            && storeId in userDoc().adminStores)
-          || (!userDoc().keys().hasAny(['adminStores'])
-            && (storeId == 'tiendita' || storeId == 'config'))
-          || (userDoc().keys().hasAny(['adminStores'])
-            && userDoc().adminStores.size() == 0
-            && (storeId == 'tiendita' || storeId == 'config'))
+          (
+            'adminStores' in userDoc()
+            && userDoc().adminStores is list
+            && userDoc().adminStores.size() > 0
+            && storeId in userDoc().adminStores
+          )
+          || (
+            (
+              !('adminStores' in userDoc())
+              || !(userDoc().adminStores is list)
+              || userDoc().adminStores.size() == 0
+            )
+            && (storeId == 'tiendita' || storeId == 'config')
+          )
         );
     }
 

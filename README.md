@@ -124,9 +124,9 @@ firebase deploy --only storage
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com)
 2. Activa **Authentication** → Email/Contraseña
 3. Crea base de datos **Firestore** (modo producción)
-4. Activa **Storage** (requiere plan **Blaze**): Storage → Comenzar. Anota el bucket (p. ej. `tiendita-propia.appspot.com` o `*.firebasestorage.app`)
+4. Activa **Storage** (requiere plan **Blaze**): Storage → Comenzar. Anota el bucket (en este proyecto: `tiendita-propia.firebasestorage.app`; proyectos viejos pueden ser `*.appspot.com`)
 5. En Configuración del proyecto → Tus apps → Web, copia la config
-6. Copia `.env.example` a `.env` y completa las variables (incluye `VITE_FIREBASE_STORAGE_BUCKET`):
+6. Copia `.env.example` a `.env` y completa las variables. **`VITE_FIREBASE_STORAGE_BUCKET` debe ser el bucket exacto** (mismo valor en el secret de GitHub Actions):
 
 ```bash
 cp .env.example .env
@@ -221,7 +221,7 @@ Abre `http://localhost:5173/TienditaPropia1/`
    - `VITE_FIREBASE_API_KEY`
    - `VITE_FIREBASE_AUTH_DOMAIN`
    - `VITE_FIREBASE_PROJECT_ID`
-   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_STORAGE_BUCKET` → valor exacto: `tiendita-propia.firebasestorage.app`
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
    - `VITE_CULQI_PUBLIC_KEY` (solo si activas Culqi)
