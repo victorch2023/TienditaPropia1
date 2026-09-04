@@ -10,3 +10,6 @@ functions/node_modules
 .firebase
 *.log
 .DS_Store
+
+# Local AI tools
+.tools/
