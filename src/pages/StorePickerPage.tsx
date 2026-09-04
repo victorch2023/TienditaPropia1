@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listStores } from '../services/store'
+import { STORE_REGISTRY } from '../config/stores'
 import type { StoreMeta } from '../types'
 import { DemoBanner } from '../components/DemoBanner'
 import { LoadingSpinner } from '../components/LoadingSpinner'
@@ -12,8 +13,8 @@ export function StorePickerPage() {
 
   useEffect(() => {
     listStores()
-      .then(setStores)
-      .catch(() => setStores([]))
+      .then((list) => setStores(list.length ? list : STORE_REGISTRY.filter((s) => s.active)))
+      .catch(() => setStores(STORE_REGISTRY.filter((s) => s.active)))
       .finally(() => setLoading(false))
   }, [])
 

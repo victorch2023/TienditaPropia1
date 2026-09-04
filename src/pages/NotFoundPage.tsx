@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom'
+import { STORE_REGISTRY } from '../config/stores'
+import { buildStorePath } from '../hooks/useStore'
 
 export function NotFoundPage() {
+  const stores = STORE_REGISTRY.filter((s) => s.active)
+
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
       <p className="text-6xl font-bold text-brand-600">404</p>
       <h1 className="mt-4 text-2xl font-bold text-gray-900">Página no encontrada</h1>
       <p className="mt-2 max-w-md text-gray-600">
-        La ruta que buscas no existe o fue movida.
+        La ruta que buscas no existe o fue movida tras la actualización multi-tienda.
       </p>
       <Link
         to="/"
@@ -14,6 +18,19 @@ export function NotFoundPage() {
       >
         Volver al inicio
       </Link>
+      {stores.length > 0 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {stores.map((store) => (
+            <Link
+              key={store.id}
+              to={buildStorePath(store.id)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:border-brand-500 hover:text-brand-700"
+            >
+              Ir a {store.name}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -34,6 +34,12 @@ function LegacyPedidoRedirect() {
   return <Navigate to={`/s/${DEFAULT_STORE_ID}/pedido/${id}`} replace />
 }
 
+function LegacyAdminRedirect() {
+  const { '*': rest } = useParams()
+  const suffix = rest ? `/${rest}` : ''
+  return <Navigate to={`/s/${DEFAULT_STORE_ID}/admin${suffix}`} replace />
+}
+
 function StoreScope() {
   return (
     <StoreProvider>
@@ -83,7 +89,8 @@ export default function App() {
           <Route path="pedido/:id" element={<LegacyPedidoRedirect />} />
           <Route path="cuenta" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/cuenta`} replace />} />
           <Route path="admin/login" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin/login`} replace />} />
-          <Route path="admin/*" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin`} replace />} />
+          <Route path="admin" element={<Navigate to={`/s/${DEFAULT_STORE_ID}/admin`} replace />} />
+          <Route path="admin/*" element={<LegacyAdminRedirect />} />
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
