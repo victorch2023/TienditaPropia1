@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../hooks/useStore'
 import {
   getProducts,
@@ -7,9 +7,8 @@ import {
   deleteProduct,
 } from '../../services/products'
 import { getCategories } from '../../services/categories'
-import { getStoreConfig } from '../../services/store'
+import { uploadProductImage } from '../../services/storage'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
-import { resolveDriveImagesFolderUrl } from '../../constants/drive'
 import { formatSoles, solesToCentavos } from '../../utils/money'
 import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl, isGoogleDriveFolderUrl } from '../../utils/driveImageUrl'
@@ -32,11 +31,14 @@ export function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
   const [form, setForm] = useState(emptyProduct)
-  const [imageUrls, setImageUrls] = useState<string[]>([''])
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
-  const [driveFolderUrl, setDriveFolderUrl] = useState(resolveDriveImagesFolderUrl())
-  const [localFileHint, setLocalFileHint] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [manualUrl, setManualUrl] = useState('')
+  const [showManualUrl, setShowManualUrl] = useState(false)
   const [imagePreviewFailed, setImagePreviewFailed] = useState<Record<number, boolean>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
     setLoading(true)
@@ -50,7 +52,6 @@ export function AdminProductsPage() {
 
   useEffect(() => {
     load()
-    getStoreConfig(storeId).then((cfg) => setDriveFolderUrl(resolveDriveImagesFolderUrl(cfg.imageHostingNote)))
   }, [storeId])
 
   const startEdit = (product?: Product) => {
@@ -65,14 +66,18 @@ export function AdminProductsPage() {
         categoryId: product.categoryId,
         active: product.active,
       })
-      setImageUrls(product.images.length > 0 ? [...product.images] : [''])
+      setImageUrls(product.images.length > 0 ? [...product.images] : [])
     } else {
       setEditing('new')
       setForm(emptyProduct)
-      setImageUrls([''])
+      setImageUrls([])
     }
-    setLocalFileHint(false)
+    setUploadProgress(null)
+    setUploadError(null)
+    setManualUrl('')
+    setShowManualUrl(false)
     setImagePreviewFailed({})
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const normalizeImages = () =>
@@ -116,32 +121,66 @@ export function AdminProductsPage() {
     load()
   }
 
-  const updateImageUrl = (index: number, value: string) => {
-    const next = [...imageUrls]
-    next[index] = value
-    setImageUrls(next)
+  const removeImageUrl = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index))
     setImagePreviewFailed((prev) => {
-      const updated = { ...prev }
-      delete updated[index]
-      return updated
+      const next: Record<number, boolean> = {}
+      Object.entries(prev).forEach(([k, v]) => {
+        const i = Number(k)
+        if (i < index) next[i] = v
+        else if (i > index) next[i - 1] = v
+      })
+      return next
     })
   }
 
-  const convertImageUrl = (index: number) => {
-    updateImageUrl(index, toDirectImageUrl(imageUrls[index]))
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files?.length) return
+    setUploadError(null)
+    const list = Array.from(files)
+    setUploadProgress(0)
+
+    try {
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i]
+        const url = await uploadProductImage(
+          storeId,
+          file,
+          editing === 'new' ? undefined : editing ?? undefined,
+          (pct) => {
+            const overall = Math.round(((i + pct / 100) / list.length) * 100)
+            setUploadProgress(overall)
+          }
+        )
+        setImageUrls((prev) => [...prev, url])
+      }
+      setUploadProgress(100)
+      setTimeout(() => setUploadProgress(null), 600)
+    } catch (err) {
+      setUploadProgress(null)
+      setUploadError(err instanceof Error ? err.message : 'Error al subir la imagen.')
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
-  const addImageUrl = () => setImageUrls([...imageUrls, ''])
-
-  const removeImageUrl = (index: number) => {
-    if (imageUrls.length <= 1) {
-      setImageUrls([''])
+  const addManualUrl = () => {
+    const trimmed = manualUrl.trim()
+    if (!trimmed) return
+    if (isGoogleDriveFolderUrl(trimmed)) {
+      setUploadError(
+        'Ese enlace es de una carpeta de Drive, no de un archivo. Usa un enlace de imagen o súbela con el botón de arriba.'
+      )
       return
     }
-    setImageUrls(imageUrls.filter((_, i) => i !== index))
+    setImageUrls((prev) => [...prev, toDirectImageUrl(trimmed)])
+    setManualUrl('')
+    setUploadError(null)
   }
 
   if (loading) return <LoadingSpinner />
+
+  const uploading = uploadProgress !== null
 
   return (
     <div>
@@ -215,122 +254,127 @@ export function AdminProductsPage() {
               className="col-span-2 rounded-lg border px-3 py-2 text-sm"
               rows={3}
             />
-            <div className="col-span-2 space-y-2">
-              <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
-                <p className="text-sm font-medium text-brand-900">Imágenes en Google Drive</p>
-                <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-brand-800">
-                  <li>Abre la carpeta de imágenes en Drive (botón abajo).</li>
-                  <li>Sube la imagen a esa carpeta.</li>
-                  <li>En el archivo: Compartir → copia el enlace del archivo (no el de la carpeta).</li>
-                  <li>Pega el enlace abajo y usa «Drive → directo» si hace falta.</li>
-                </ol>
-                <button
-                  type="button"
-                  onClick={() => window.open(driveFolderUrl, '_blank', 'noopener,noreferrer')}
-                  className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700"
-                >
-                  Abrir carpeta de imágenes en Drive
-                </button>
-                <p className="mt-3 text-xs text-brand-700">
-                  La subida automática a Drive requiere configuración avanzada futura (OAuth o cuenta
-                  de servicio en el servidor). Por ahora sube las imágenes manualmente.
+            <div className="col-span-2 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Imágenes del producto</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Se suben a Firebase Storage. Las URLs se guardan en el producto al pulsar Guardar.
+                  Máx. 10 MB por imagen.
                 </p>
               </div>
-              <label className="block text-sm font-medium text-gray-700">
-                URLs de imagen (Google Drive, imgbb, etc.)
-              </label>
-              <div>
-                <label className="inline-block cursor-pointer text-sm text-brand-600 hover:underline">
-                  Elegir archivo local (solo referencia)
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label
+                  className={`inline-flex cursor-pointer items-center rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 ${
+                    uploading ? 'pointer-events-none opacity-60' : ''
+                  }`}
+                >
+                  {uploading ? `Subiendo… ${uploadProgress}%` : 'Elegir imágenes'}
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
-                    onChange={(e) => setLocalFileHint(!!e.target.files?.[0])}
+                    disabled={uploading}
+                    onChange={(e) => void handleFilesSelected(e.target.files)}
                   />
                 </label>
-                {localFileHint && (
-                  <p className="mt-1 text-sm text-amber-800">
-                    Sube este archivo manualmente a la carpeta de Drive y pega el enlace.
-                  </p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowManualUrl((v) => !v)}
+                  className="text-sm text-gray-600 hover:underline"
+                >
+                  {showManualUrl ? 'Ocultar URL externa' : 'Pegar URL externa (opcional)'}
+                </button>
               </div>
-              {imageUrls.map((url, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      placeholder="https://drive.google.com/file/d/..."
-                      value={url}
-                      onChange={(e) => updateImageUrl(i, e.target.value)}
-                      className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                    />
-                    {url.trim() && (
-                      <button
-                        type="button"
-                        onClick={() => convertImageUrl(i)}
-                        className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                        title="Convertir enlace de Drive a URL directa"
-                      >
-                        Drive → directo
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeImageUrl(i)}
-                      className="shrink-0 rounded-lg border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+
+              {uploading && (
+                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-brand-600 transition-all duration-200"
+                    style={{ width: `${uploadProgress ?? 0}%` }}
+                  />
+                </div>
+              )}
+
+              {uploadError && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {uploadError}
+                </p>
+              )}
+
+              {showManualUrl && (
+                <div className="flex gap-2">
+                  <input
+                    placeholder="https://… (Drive, imgbb, etc.)"
+                    value={manualUrl}
+                    onChange={(e) => setManualUrl(e.target.value)}
+                    className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addManualUrl}
+                    className="shrink-0 rounded-lg border px-3 py-2 text-sm text-brand-700 hover:bg-brand-50"
+                  >
+                    Agregar URL
+                  </button>
+                </div>
+              )}
+
+              {imageUrls.length === 0 ? (
+                <p className="text-sm text-gray-500">Aún no hay imágenes.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {imageUrls.map((url, i) => (
+                    <li
+                      key={`${url}-${i}`}
+                      className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
                     >
-                      Quitar
-                    </button>
-                  </div>
-                  {url.trim() && isGoogleDriveFolderUrl(url) && (
-                    <p className="text-sm text-red-600">
-                      Este enlace es de una carpeta de Drive, no de un archivo. Abre la imagen,
-                      compártela con «Cualquier persona con el enlace» y pega el enlace del
-                      archivo (formato …/file/d/…).
-                    </p>
-                  )}
-                  {url.trim() && !isGoogleDriveFolderUrl(url) && (
-                    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <DriveImage
                         src={url}
-                        alt="Vista previa"
+                        alt={`Imagen ${i + 1}`}
                         className="h-20 w-20 shrink-0 rounded object-cover"
                         onAllCandidatesFailed={() =>
                           setImagePreviewFailed((prev) => ({ ...prev, [i]: true }))
                         }
                       />
-                      <div className="text-sm">
-                        <p className="font-medium text-gray-700">Vista previa</p>
-                        {imagePreviewFailed[i] ? (
+                      <div className="min-w-0 flex-1 text-sm">
+                        <p className="font-medium text-gray-700">Imagen {i + 1}</p>
+                        <p className="mt-0.5 truncate text-xs text-gray-500" title={url}>
+                          {url}
+                        </p>
+                        {imagePreviewFailed[i] && (
                           <p className="mt-1 text-amber-800">
-                            No se pudo cargar la imagen. Verifica que el archivo esté compartido
-                            como «Cualquier persona con el enlace» y que sea un enlace de archivo,
-                            no de carpeta.
+                            No se pudo cargar la vista previa. La URL se guardará igual; verifica
+                            permisos o el enlace.
                           </p>
-                        ) : (
-                          <p className="mt-1 text-gray-500">
-                            Si ves la miniatura, la imagen debería mostrarse en la tienda.
+                        )}
+                        {isGoogleDriveFolderUrl(url) && (
+                          <p className="mt-1 text-red-600">
+                            Enlace de carpeta de Drive (no sirve como imagen). Quítalo y sube el
+                            archivo o pega un enlace de archivo.
                           </p>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addImageUrl}
-                className="text-sm text-brand-600 hover:underline"
-              >
-                + Agregar otra imagen
-              </button>
+                      <button
+                        type="button"
+                        onClick={() => removeImageUrl(i)}
+                        className="shrink-0 rounded-lg border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        Quitar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
           <div className="mt-4 flex gap-3">
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white"
+              disabled={saving || uploading}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white disabled:opacity-60"
             >
               {saving ? 'Guardando...' : 'Guardar'}
             </button>

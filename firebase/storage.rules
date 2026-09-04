@@ -1,14 +1,60 @@
 rules_version = '2';
-// Firebase Storage es OPCIONAL en este proyecto.
-// Las imágenes de productos se hospedan en Google Drive (u otro servicio) y las URLs
-// se guardan en Firestore. No necesitas activar Storage en el plan Spark.
-// Estas reglas solo aplican si decides usar Storage en el futuro.
+// Imágenes de producto en Firebase Storage.
+// Binarios aquí; las URLs de descarga se guardan en Firestore (products.images).
 service firebase.storage {
   match /b/{bucket}/o {
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return request.auth != null && userDoc().role == 'admin';
+    }
+
+    /**
+     * Admin de una tienda (misma lógica que firestore.rules).
+     */
+    function isStoreAdmin(storeId) {
+      return request.auth != null
+        && userDoc().role == 'admin'
+        && (
+          (userDoc().keys().hasAny(['adminStores'])
+            && storeId in userDoc().adminStores)
+          || (!userDoc().keys().hasAny(['adminStores'])
+            && (storeId == 'tiendita' || storeId == 'config'))
+          || (userDoc().keys().hasAny(['adminStores'])
+            && userDoc().adminStores.size() == 0
+            && (storeId == 'tiendita' || storeId == 'config'))
+        );
+    }
+
+    function isImageUpload() {
+      return request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Producto existente: stores/{storeId}/products/{productId}/{filename}
+    match /stores/{storeId}/products/{productId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isStoreAdmin(storeId) && isImageUpload();
+      allow delete: if isStoreAdmin(storeId);
+    }
+
+    // Alta de producto (aún sin ID): stores/{storeId}/uploads/{uid}/{filename}
+    match /stores/{storeId}/uploads/{userId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isStoreAdmin(storeId)
+        && request.auth.uid == userId
+        && isImageUpload();
+      allow delete: if isStoreAdmin(storeId) && request.auth.uid == userId;
+    }
+
+    // Ruta legacy /products/**
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow create, update: if isAdmin() && isImageUpload();
+      allow delete: if isAdmin();
     }
   }
 }

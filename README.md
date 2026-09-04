@@ -1,6 +1,6 @@
 # TienditaPropia — Multi-tienda (Perú)
 
-Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`) y **Citroleaf** (`citroleaf`). Imágenes vía Google Drive / URLs públicas. Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
+Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`) y **Citroleaf** (`citroleaf`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
 
 **URL de producción (multi-tienda):** `https://victorch2023.github.io/TienditaPropia1/`
 
@@ -72,16 +72,15 @@ firebase deploy --only firestore:rules,firestore:indexes
 |------|--------|
 | 1 | Instalar **Node.js 20+** desde [nodejs.org](https://nodejs.org) |
 | 2 | `npm install` en la raíz del proyecto |
-| 3 | Crear proyecto en [Firebase Console](https://console.firebase.google.com) (Auth, Firestore) |
-| 4 | `cp .env.example .env` y pegar tus credenciales Firebase |
+| 3 | Crear proyecto en [Firebase Console](https://console.firebase.google.com) (Auth, Firestore, **Storage** — plan Blaze) |
+| 4 | `cp .env.example .env` y pegar tus credenciales Firebase (incluye `VITE_FIREBASE_STORAGE_BUCKET`) |
 | 5 | `cp .firebaserc.example .firebaserc` y poner tu `projectId` |
-| 6 | `firebase login` y `firebase deploy --only firestore:rules,firestore:indexes` |
-| 7 | Crear carpeta pública en Google Drive para imágenes de productos (ver sección abajo) |
-| 8 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed` y `npm run seed:citroleaf` |
-| 9 | Registrarte en `/s/tiendita/cuenta` y poner `role=admin` + `adminStores` |
-| 10 | Configurar Yape/Plin en `/s/{storeId}/admin/config` |
-| 11 | (Opcional futuro) Cuenta Culqi, desplegar functions, activar pasarela en admin |
-| 12 | Habilitar GitHub Pages (Actions) y agregar secrets `VITE_*` en el repo |
+| 6 | `firebase login` y `firebase deploy --only firestore:rules,firestore:indexes,storage` |
+| 7 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed` y `npm run seed:citroleaf` |
+| 8 | Registrarte en `/s/tiendita/cuenta` y poner `role=admin` + `adminStores` |
+| 9 | Configurar Yape/Plin en `/s/{storeId}/admin/config` |
+| 10 | (Opcional futuro) Cuenta Culqi, desplegar functions, activar pasarela en admin |
+| 11 | Habilitar GitHub Pages (Actions) y agregar secrets `VITE_*` en el repo |
 
 **Vista previa sin Firebase:** `npm run dev` → [http://localhost:5173/TienditaPropia1/](http://localhost:5173/TienditaPropia1/)
 
@@ -89,11 +88,15 @@ firebase deploy --only firestore:rules,firestore:indexes
 
 ---
 
-## Carpeta de imágenes del proyecto
+## Imágenes de producto (Firebase Storage)
 
-Carpeta compartida en Google Drive: [**Shared Tiendita Images**](https://drive.google.com/drive/folders/1D3Vir25MPJVJTKe3Zq6vtBblN22x6tgh?usp=sharing)
+En el admin → **Productos** → elige archivos con el selector. Se suben a Storage bajo `stores/{storeId}/…` y la URL de descarga se guarda en Firestore (`images: string[]`) al guardar el producto. Las URLs antiguas de Drive u otros hosts siguen funcionando en el catálogo.
 
-Sube ahí las fotos de productos. **No pegues el enlace de la carpeta** en el campo imagen de un producto (no funciona en `<img>`). Abre cada archivo → Compartir → copia el enlace del archivo y conviértelo con **Drive → directo** en el panel admin.
+Requiere plan **Blaze** y Storage activado. Despliega reglas:
+
+```bash
+firebase deploy --only storage
+```
 
 ---
 
@@ -121,9 +124,9 @@ Sube ahí las fotos de productos. **No pegues el enlace de la carpeta** en el ca
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com)
 2. Activa **Authentication** → Email/Contraseña
 3. Crea base de datos **Firestore** (modo producción)
-4. **Storage no es obligatorio** — las imágenes se hospedan en Google Drive (ver sección 1.1)
+4. Activa **Storage** (requiere plan **Blaze**): Storage → Comenzar. Anota el bucket (p. ej. `tiendita-propia.appspot.com` o `*.firebasestorage.app`)
 5. En Configuración del proyecto → Tus apps → Web, copia la config
-6. Copia `.env.example` a `.env` y completa las variables:
+6. Copia `.env.example` a `.env` y completa las variables (incluye `VITE_FIREBASE_STORAGE_BUCKET`):
 
 ```bash
 cp .env.example .env
@@ -134,24 +137,18 @@ cp .env.example .env
 ```bash
 npm install -g firebase-tools
 firebase login
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules,storage
 ```
 
-### 1.1 Imágenes con Google Drive (sin Firebase Storage)
+### 1.1 Subida de imágenes (Firebase Storage)
 
-Con el plan **Spark** (gratis) no necesitas subir archivos a Firebase. Usa una carpeta pública de Google Drive:
+1. En el panel admin → **Productos** → Nuevo / Editar.
+2. Pulsa **Elegir imágenes** (JPG, PNG, WebP, etc.; máx. 10 MB).
+3. La app sube el archivo a Storage (`stores/{storeId}/products/…` o `…/uploads/…`) y muestra vista previa + progreso.
+4. Al **Guardar**, las URLs de descarga quedan en Firestore (`images: string[]`).
+5. Opcional: «Pegar URL externa» si ya tienes un enlace público (Drive, imgbb, etc.).
 
-1. Crea una carpeta en [Google Drive](https://drive.google.com) (ej. `Mi Tiendita - Imágenes`).
-2. Clic derecho → **Compartir** → **Cualquier persona con el enlace** → rol **Lector**.
-3. Sube las fotos de tus productos a esa carpeta.
-4. Abre cada imagen → **Compartir** → copia el enlace (formato `https://drive.google.com/file/d/ID/view...`).
-5. En el panel admin → **Productos**, pega el enlace en el campo de imagen.
-6. Usa el botón **Drive → directo** para convertir el enlace compartido a URL de visualización.
-7. La URL se guarda en Firestore (`images: string[]`). La tienda la muestra automáticamente.
-
-También puedes usar otros servicios (imgbb, Cloudinary, etc.) pegando la URL directa de la imagen.
-
-**Comprobantes de pago:** el cliente puede indicar número de operación y, opcionalmente, pegar un enlace de Drive con la captura del pago (misma lógica que las imágenes de producto).
+**Comprobantes de pago:** el cliente puede indicar número de operación y, opcionalmente, pegar un enlace público con la captura del pago.
 
 ### Índices Firestore requeridos
 
