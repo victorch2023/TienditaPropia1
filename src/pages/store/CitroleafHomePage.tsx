@@ -187,7 +187,7 @@ export function CitroleafHomePage() {
         <p className="mt-3 text-sm text-[#261F1A]/70">
           {config.description}
         </p>
-        <div className="mt-4 flex flex-col items-center gap-2 text-[#261F1A]/60">
+        <div className="mt-4 flex flex-col items-center gap-3 text-[#261F1A]/70">
           <a
             href="https://www.instagram.com/citroleaf__/"
             target="_blank"
@@ -210,7 +210,7 @@ export function CitroleafHomePage() {
             href="https://ig.me/m/citroleaf__"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] uppercase tracking-[0.22em] hover:text-[#261F1A]"
+            className="text-sm hover:text-[#261F1A]"
           >
             Contacto (DM en Instagram)
           </a>
