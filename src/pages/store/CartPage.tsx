@@ -4,19 +4,32 @@ import { useStore } from '../../hooks/useStore'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
 import { formatSoles, calculateTotal } from '../../utils/money'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
+import {
+  CITROLEAF_SINGLE_PRODUCT_MODE,
+  CITROLEAF_STORE_ID,
+} from '../../config/stores'
 
 export function CartPage() {
   const { items, subtotal, updateQuantity, removeItem } = useCart()
   const { config } = useStoreConfig()
-  const { path } = useStore()
+  const { path, storeId } = useStore()
   const totals = calculateTotal(subtotal, config.shippingDefault, config.igvRate)
+  // En modo single-product, /catalogo redirige al detalle; el link sigue siendo válido
+  const continueShoppingTo = path('catalogo')
+  const continueShoppingLabel =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_SINGLE_PRODUCT_MODE
+      ? 'Ir al producto'
+      : 'Ir al catálogo'
 
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900">Tu carrito está vacío</h1>
-        <Link to={path('catalogo')} className="mt-4 inline-block text-brand-600 hover:underline">
-          Ir al catálogo
+        <Link
+          to={continueShoppingTo}
+          className="mt-4 inline-block text-brand-600 hover:underline"
+        >
+          {continueShoppingLabel}
         </Link>
       </div>
     )

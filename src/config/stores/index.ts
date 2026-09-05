@@ -16,7 +16,13 @@ import {
 } from './tiendita'
 
 export { DEFAULT_STORE_ID, LEGACY_CONFIG_DOC_ID, KNOWN_STORE_IDS } from './constants'
-export { CITROLEAF_STORE_ID, CITROLEAF_META, CITROLEAF_STORE_CONFIG } from './citroleaf'
+export {
+  CITROLEAF_STORE_ID,
+  CITROLEAF_META,
+  CITROLEAF_STORE_CONFIG,
+  CITROLEAF_SINGLE_PRODUCT_MODE,
+  pickCitroleafSingleProduct,
+} from './citroleaf'
 export { TIENDITA_META, TIENDITA_STORE_CONFIG } from './tiendita'
 
 export const STORE_REGISTRY: StoreMeta[] = [

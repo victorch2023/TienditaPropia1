@@ -1,9 +1,14 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ProductCard } from '../../components/ProductCard'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { useProducts } from '../../hooks/useProducts'
 import { useStore } from '../../hooks/useStore'
 import { useStoreConfig } from '../../hooks/useStoreConfig'
+import {
+  CITROLEAF_SINGLE_PRODUCT_MODE,
+  pickCitroleafSingleProduct,
+} from '../../config/stores'
 import heroLeft from '../../assets/citroleaf/hero-left.jpg'
 import heroRight from '../../assets/citroleaf/hero-right.jpg'
 import tileCitronela from '../../assets/citroleaf/tile-citronela.jpg'
@@ -31,7 +36,18 @@ export function CitroleafHomePage() {
   const { products, loading } = useProducts(true)
   const { config } = useStoreConfig()
   const { path } = useStore()
-  const featured = products.slice(0, 4)
+  const featured = CITROLEAF_SINGLE_PRODUCT_MODE
+    ? products.slice(0, 1)
+    : products.slice(0, 4)
+
+  // Comprar / Ver todo → detalle del producto (no listado). Flag: CITROLEAF_SINGLE_PRODUCT_MODE
+  const shopTo = useMemo(() => {
+    if (CITROLEAF_SINGLE_PRODUCT_MODE) {
+      const product = pickCitroleafSingleProduct(products)
+      if (product) return path(`producto/${product.id}`)
+    }
+    return path('catalogo')
+  }, [products, path])
 
   return (
     <div className="bg-[#F2F0EB] text-[#261F1A]">
@@ -66,7 +82,7 @@ export function CitroleafHomePage() {
                 'Protección natural para tu piel y para tu planeta'}
             </p>
             <Link
-              to={path('catalogo')}
+              to={shopTo}
               className="mt-8 inline-block border border-white px-8 py-3.5 text-[11px] font-medium uppercase tracking-[0.25em] text-white transition hover:bg-white hover:text-[#261F1A]"
             >
               Comprar
@@ -93,12 +109,14 @@ export function CitroleafHomePage() {
       <section className="px-4 pb-16 md:px-10">
         <div className="mb-10 flex items-end justify-between gap-4">
           <h2 className="font-citro-serif text-3xl md:text-4xl">Lo esencial</h2>
-          <Link
-            to={path('catalogo')}
-            className="text-[11px] uppercase tracking-[0.22em] text-[#261F1A]/70 underline-offset-4 hover:underline"
-          >
-            Ver todo
-          </Link>
+          {!CITROLEAF_SINGLE_PRODUCT_MODE && (
+            <Link
+              to={shopTo}
+              className="text-[11px] uppercase tracking-[0.22em] text-[#261F1A]/70 underline-offset-4 hover:underline"
+            >
+              Ver todo
+            </Link>
+          )}
         </div>
         {loading ? (
           <LoadingSpinner />
@@ -127,7 +145,7 @@ export function CitroleafHomePage() {
             Para pieles reales y noches tranquilas
           </h2>
           <Link
-            to={path('catalogo')}
+            to={shopTo}
             className="mt-8 inline-block border border-[#F2F0EB] px-8 py-3 text-[11px] uppercase tracking-[0.25em] transition hover:bg-[#F2F0EB] hover:text-[#261F1A]"
           >
             Comprar

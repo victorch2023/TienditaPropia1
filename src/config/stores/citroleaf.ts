@@ -3,6 +3,31 @@ import { DEFAULT_STORE_CONFIG } from '../../types'
 
 export const CITROLEAF_STORE_ID = 'citroleaf'
 
+/**
+ * Modo un solo producto: oculta el listado `/catalogo` y redirige al detalle.
+ * Poner `false` para reactivar catálogo.
+ */
+export const CITROLEAF_SINGLE_PRODUCT_MODE = true
+
+/** Elige el producto al que apunta Comprar / catálogo en modo single-product. */
+export function pickCitroleafSingleProduct(
+  products: Product[]
+): Product | undefined {
+  if (products.length === 0) return undefined
+  if (products.length === 1) return products[0]
+
+  const at30 = products.find((p) => p.price === 3000)
+  if (at30) return at30
+
+  const named = products.find((p) => /^citroleaf$/i.test(p.name.trim()))
+  if (named) return named
+
+  const sprayStar = products.find((p) => p.id === 'citro-prod-spray-hl')
+  if (sprayStar) return sprayStar
+
+  return products[0]
+}
+
 export const CITROLEAF_META = {
   id: CITROLEAF_STORE_ID,
   slug: CITROLEAF_STORE_ID,

@@ -8,6 +8,10 @@ import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { formatSoles } from '../../utils/money'
 import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
+import {
+  CITROLEAF_SINGLE_PRODUCT_MODE,
+  CITROLEAF_STORE_ID,
+} from '../../config/stores'
 import type { Product } from '../../types'
 
 export function ProductPage() {
@@ -37,11 +41,17 @@ export function ProductPage() {
 
   if (loading) return <LoadingSpinner />
   if (!product) {
+    const backTo =
+      storeId === CITROLEAF_STORE_ID && CITROLEAF_SINGLE_PRODUCT_MODE
+        ? path()
+        : path('catalogo')
     return (
       <div className="text-center">
         <p className="text-gray-500">Producto no encontrado.</p>
-        <Link to={path('catalogo')} className="mt-4 text-brand-600 hover:underline">
-          Volver al catálogo
+        <Link to={backTo} className="mt-4 text-brand-600 hover:underline">
+          {storeId === CITROLEAF_STORE_ID && CITROLEAF_SINGLE_PRODUCT_MODE
+            ? 'Volver al inicio'
+            : 'Volver al catálogo'}
         </Link>
       </div>
     )

@@ -1,12 +1,19 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../../components/ProductCard'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { DriveImage } from '../../components/DriveImage'
 import { useProducts } from '../../hooks/useProducts'
 import { useCategories } from '../../hooks/useCategories'
+import { useStore } from '../../hooks/useStore'
+import {
+  CITROLEAF_SINGLE_PRODUCT_MODE,
+  CITROLEAF_STORE_ID,
+  pickCitroleafSingleProduct,
+} from '../../config/stores'
 
 export function CatalogPage() {
+  const { storeId, path } = useStore()
   const [searchParams, setSearchParams] = useSearchParams()
   const categorySlug = searchParams.get('categoria')
   const [search, setSearch] = useState('')
@@ -14,6 +21,9 @@ export function CatalogPage() {
 
   const { products, loading } = useProducts(true)
   const { categories } = useCategories()
+
+  const singleProductMode =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_SINGLE_PRODUCT_MODE
 
   const activeCategory = useMemo(
     () => (categorySlug ? categories.find((c) => c.slug === categorySlug) : undefined),
@@ -35,6 +45,16 @@ export function CatalogPage() {
     }
     return result
   }, [products, activeCategory, search, maxPrice])
+
+  // Citroleaf: bypass del listado → detalle del único producto (flag en citroleaf.ts)
+  if (singleProductMode) {
+    if (loading) return <LoadingSpinner />
+    const product = pickCitroleafSingleProduct(products)
+    if (product) {
+      return <Navigate to={path(`producto/${product.id}`)} replace />
+    }
+    return <Navigate to={path()} replace />
+  }
 
   return (
     <div>
