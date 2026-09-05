@@ -105,31 +105,33 @@ export function CitroleafHomePage() {
         </p>
       </section>
 
-      {/* Products */}
-      <section className="px-4 pb-16 md:px-10">
-        <div className="mb-10 flex items-end justify-between gap-4">
-          <h2 className="font-citro-serif text-3xl md:text-4xl">Lo esencial</h2>
-          {!CITROLEAF_SINGLE_PRODUCT_MODE && (
+      {/* "Lo esencial" (cards + VER PRODUCTO): dormida en modo producto único — redundante
+          con el CTA Comprar del hero. Reactivar: CITROLEAF_SINGLE_PRODUCT_MODE = false
+          en src/config/stores/citroleaf.ts (o envolver con showEssentialsSection = true). */}
+      {!CITROLEAF_SINGLE_PRODUCT_MODE && (
+        <section className="px-4 pb-16 md:px-10">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <h2 className="font-citro-serif text-3xl md:text-4xl">Lo esencial</h2>
             <Link
               to={shopTo}
               className="text-[11px] uppercase tracking-[0.22em] text-[#261F1A]/70 underline-offset-4 hover:underline"
             >
               Ver todo
             </Link>
-          )}
-        </div>
-        {loading ? (
-          <LoadingSpinner />
-        ) : (
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
-            {featured.map((p) => (
-              <div key={p.id} className="group">
-                <ProductCard product={p} variant="citroleaf" />
-              </div>
-            ))}
           </div>
-        )}
-      </section>
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+              {featured.map((p) => (
+                <div key={p.id} className="group">
+                  <ProductCard product={p} variant="citroleaf" />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <Marquee text="Guardians of nature • Citroleaf Lima •" />
 

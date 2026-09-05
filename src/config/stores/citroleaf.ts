@@ -4,8 +4,9 @@ import { DEFAULT_STORE_CONFIG } from '../../types'
 export const CITROLEAF_STORE_ID = 'citroleaf'
 
 /**
- * Modo un solo producto: oculta el listado `/catalogo` y redirige al detalle.
- * Poner `false` para reactivar catálogo.
+ * Modo un solo producto: oculta el listado `/catalogo`, redirige al detalle,
+ * y duerme la sección "Lo esencial" de la home (redundante con Comprar → producto).
+ * Poner `false` para reactivar catálogo + sección "Lo esencial".
  */
 export const CITROLEAF_SINGLE_PRODUCT_MODE = true
 
