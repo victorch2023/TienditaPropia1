@@ -17,7 +17,10 @@ import {
 } from '../../config/stores'
 import { validateDNI, validateRUC } from '../../utils/fiscal'
 import { formatSoles, calculateTotal } from '../../utils/money'
-import { toDirectImageUrl } from '../../utils/driveImageUrl'
+import {
+  RECEIPT_ACCEPT,
+  uploadPaymentReceipt,
+} from '../../services/storage'
 import type { FiscalData, ManualPaymentMethod, OrderItem, ShippingAddress } from '../../types'
 
 const JA_INSTAGRAM_MENTION_URL =
@@ -59,7 +62,8 @@ export function CheckoutPage() {
 
   const [manualMethod, setManualMethod] = useState<ManualPaymentMethod>('yape')
   const [paymentReference, setPaymentReference] = useState('')
-  const [proofUrl, setProofUrl] = useState('')
+  const [proofFile, setProofFile] = useState<File | null>(null)
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null)
 
   const skipFiscalReceipt =
     storeId === CITROLEAF_STORE_ID && CITROLEAF_SKIP_FISCAL_RECEIPT
@@ -154,9 +158,24 @@ export function CheckoutPage() {
     }))
 
   const handleManualPayment = async () => {
+    const reference = paymentReference.trim()
+    if (!reference) {
+      setError('Ingresa el número de operación / referencia')
+      return
+    }
+    if (!proofFile) {
+      setError('Adjunta el comprobante de pago (imagen o PDF)')
+      return
+    }
+
     setProcessing(true)
     setError('')
+    setUploadPercent(0)
     try {
+      const receipt = await uploadPaymentReceipt(storeId, proofFile, {
+        onProgress: setUploadPercent,
+      })
+
       const orderId = await createOrder({
         storeId,
         userId: user?.uid,
@@ -169,10 +188,11 @@ export function CheckoutPage() {
         payment: {
           method: 'manual',
           manualMethod,
-          paymentReference: paymentReference.trim() || undefined,
-          paymentProofUrl: proofUrl.trim()
-            ? toDirectImageUrl(proofUrl.trim())
-            : undefined,
+          paymentReference: reference,
+          paymentProofUrl: receipt.url,
+          paymentProofPath: receipt.path,
+          paymentProofContentType: receipt.contentType,
+          paymentProofFilename: receipt.filename,
           submittedAt: Date.now(),
         },
         fiscal: buildFiscal(),
@@ -186,6 +206,7 @@ export function CheckoutPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al registrar pedido')
       setProcessing(false)
+      setUploadPercent(null)
     }
   }
 
@@ -522,40 +543,43 @@ export function CheckoutPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Número de operación / referencia (opcional)
+              Número de operación / referencia (obligatorio)
             </label>
             <input
               value={paymentReference}
               onChange={(e) => setPaymentReference(e.target.value)}
               placeholder="Ej. 00123456"
+              required
               className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              URL del comprobante (opcional)
+              Comprobante de pago (obligatorio)
             </label>
             <p className="mt-0.5 text-xs text-gray-500">
-              Sube tu captura a Google Drive (carpeta pública) y pega el enlace aquí.
+              Sube una captura o PDF del pago (máx. 10 MB).
             </p>
-            <div className="mt-1 flex gap-2">
-              <input
-                value={proofUrl}
-                onChange={(e) => setProofUrl(e.target.value)}
-                placeholder="https://drive.google.com/file/d/..."
-                className="flex-1 rounded-lg border px-3 py-2 text-sm"
-              />
-              {proofUrl.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setProofUrl(toDirectImageUrl(proofUrl))}
-                  className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                >
-                  Drive → directo
-                </button>
-              )}
-            </div>
+            <input
+              type="file"
+              accept={RECEIPT_ACCEPT}
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null
+                setProofFile(file)
+              }}
+              className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-brand-700"
+            />
+            {proofFile && (
+              <p className="mt-1 text-xs text-gray-600">
+                Archivo: {proofFile.name}
+              </p>
+            )}
+            {uploadPercent != null && processing && (
+              <p className="mt-1 text-xs text-brand-700">
+                Subiendo comprobante… {uploadPercent}%
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3">

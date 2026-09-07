@@ -52,6 +52,20 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    /** Comprobante de pago: imagen o PDF, máx. 10 MB. */
+    function isReceiptUpload() {
+      return request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf'
+        );
+    }
+
+    function isReceiptFileName(fileName) {
+      return fileName.matches('receipt-.*');
+    }
+
     // Producto existente: stores/{storeId}/products/{productId}/{filename}
     match /stores/{storeId}/products/{productId}/{fileName} {
       allow read: if true;
@@ -66,6 +80,22 @@ service firebase.storage {
         && request.auth.uid == userId
         && isImageUpload();
       allow delete: if isStoreAdmin(storeId) && request.auth.uid == userId;
+    }
+
+    /**
+     * Comprobantes de pedido (checkout manual, con o sin login).
+     * Path: stores/{storeId}/orders/{orderId|temp}/{uid|guest}/receipt-{uuid}.{ext}
+     */
+    match /stores/{storeId}/orders/{orderId}/{uploaderId}/{fileName} {
+      allow read: if true;
+      allow create: if isReceiptUpload()
+        && isReceiptFileName(fileName)
+        && (
+          uploaderId == 'guest'
+          || (isSignedIn() && request.auth.uid == uploaderId)
+        );
+      allow update: if false;
+      allow delete: if isStoreAdmin(storeId);
     }
 
     // Ruta legacy /products/**

@@ -4,9 +4,38 @@ import { demoError, isDemoMode } from '../config/demo'
 
 const MAX_BYTES = 10 * 1024 * 1024
 
+export const RECEIPT_ACCEPT =
+  'application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif'
+
 function safeFileName(name: string): string {
   const base = name.trim() || 'image.jpg'
-  return base.replace(/[^\w.\-()+]/g, '_').slice(0, 120)
+  return base.replace(/[^\w.\-()+ ]/g, '_').slice(0, 120)
+}
+
+function newId(): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function extFromFile(file: File): string {
+  const match = file.name.match(/\.([a-zA-Z0-9]+)$/)
+  if (match) return match[1].toLowerCase()
+  if (file.type === 'application/pdf') return 'pdf'
+  if (file.type.startsWith('image/')) {
+    const subtype = file.type.split('/')[1]?.split('+')[0]
+    if (subtype && subtype !== 'jpeg') return subtype
+    return 'jpg'
+  }
+  return 'bin'
+}
+
+function isAllowedReceipt(file: File): boolean {
+  if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+    return true
+  }
+  // Algunos móviles no envían MIME; validar por extensión.
+  return /\.(pdf|jpe?g|png|webp|heic|heif)$/i.test(file.name)
 }
 
 export function mapStorageError(err: unknown): Error {
@@ -80,11 +109,7 @@ export async function uploadProductImage(
     /* si falla el refresh, el upload usará el token en caché */
   }
 
-  const id =
-    typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-  const fileName = `${id}-${safeFileName(file.name)}`
+  const fileName = `${newId()}-${safeFileName(file.name)}`
   const knownProduct =
     productId && productId !== 'new' ? productId : null
   const path = knownProduct
@@ -109,6 +134,99 @@ export async function uploadProductImage(
         try {
           const url = await getDownloadURL(task.snapshot.ref)
           resolve(url)
+        } catch (e) {
+          reject(mapStorageError(e))
+        }
+      }
+    )
+  })
+}
+
+export interface PaymentReceiptUpload {
+  url: string
+  path: string
+  contentType: string
+  filename: string
+}
+
+/**
+ * Sube comprobante de pago (imagen o PDF) para checkout manual.
+ * Path: stores/{storeId}/orders/{orderId|temp}/{uid|guest}/receipt-{uuid}.{ext}
+ * No requiere sesión (uploader = guest) si el checkout es anónimo.
+ */
+export async function uploadPaymentReceipt(
+  storeId: string,
+  file: File,
+  options?: {
+    orderId?: string
+    onProgress?: (percent: number) => void
+  }
+): Promise<PaymentReceiptUpload> {
+  if (isDemoMode()) {
+    throw demoError('Subir comprobante')
+  }
+
+  if (!isAllowedReceipt(file)) {
+    throw new Error(
+      'Solo se permiten imágenes (JPG, PNG, WebP, HEIC) o PDF.'
+    )
+  }
+  if (file.size > MAX_BYTES) {
+    throw new Error('El comprobante supera el límite de 10 MB.')
+  }
+
+  const user = auth.currentUser
+  if (user) {
+    try {
+      await user.getIdToken(/* forceRefresh */ true)
+    } catch {
+      /* token en caché */
+    }
+  }
+
+  const uploaderId = user?.uid || 'guest'
+  const orderSegment = options?.orderId?.trim() || 'temp'
+  const contentType =
+    file.type ||
+    (/\.pdf$/i.test(file.name) ? 'application/pdf' : 'image/jpeg')
+  const filename = `receipt-${newId()}.${extFromFile(file)}`
+  const path = `stores/${storeId}/orders/${orderSegment}/${uploaderId}/${filename}`
+
+  const storageRef = ref(storage, path)
+  const task = uploadBytesResumable(storageRef, file, { contentType })
+  const onProgress = options?.onProgress
+
+  return new Promise((resolve, reject) => {
+    task.on(
+      'state_changed',
+      (snap) => {
+        if (onProgress && snap.totalBytes > 0) {
+          onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100))
+        }
+      },
+      (err) => {
+        const mapped = mapStorageError(err)
+        if (
+          mapped.message.includes('No tienes permiso para subir imágenes')
+        ) {
+          reject(
+            new Error(
+              'No se pudo subir el comprobante. Verifica las reglas de Storage o intenta de nuevo.'
+            )
+          )
+          return
+        }
+        reject(mapped)
+      },
+      async () => {
+        try {
+          const url = await getDownloadURL(task.snapshot.ref)
+          resolve({
+            url,
+            path,
+            contentType,
+            filename: file.name || filename,
+          })
         } catch (e) {
           reject(mapStorageError(e))
         }

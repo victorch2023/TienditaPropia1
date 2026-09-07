@@ -99,7 +99,11 @@ export interface OrderPayment {
   method: 'manual' | 'culqi'
   manualMethod?: ManualPaymentMethod
   paymentReference?: string
+  /** Download URL del comprobante (Storage o URL legacy Drive). */
   paymentProofUrl?: string
+  paymentProofPath?: string
+  paymentProofContentType?: string
+  paymentProofFilename?: string
   submittedAt?: number
   culqiChargeId?: string
   paidAt?: number

@@ -170,16 +170,55 @@ export function AdminOrdersPage() {
                   <p>Referencia: {selected.payment.paymentReference}</p>
                 )}
                 {selected.payment.paymentProofUrl && (
-                  <p className="mt-2">
+                  <div className="mt-3 space-y-2">
                     <a
                       href={toDirectImageUrl(selected.payment.paymentProofUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-brand-600 hover:underline"
+                      className="inline-flex text-brand-600 hover:underline"
                     >
-                      Ver comprobante de pago
+                      Ver comprobante
+                      {selected.payment.paymentProofFilename
+                        ? ` (${selected.payment.paymentProofFilename})`
+                        : ''}
                     </a>
-                  </p>
+                    {(() => {
+                      const url = toDirectImageUrl(
+                        selected.payment.paymentProofUrl
+                      )
+                      const ct =
+                        selected.payment.paymentProofContentType || ''
+                      const isPdf =
+                        ct === 'application/pdf' ||
+                        /\.pdf(\?|$)/i.test(url) ||
+                        /\.pdf$/i.test(
+                          selected.payment.paymentProofFilename || ''
+                        )
+                      const isImage =
+                        ct.startsWith('image/') ||
+                        (!isPdf &&
+                          (/\.(jpe?g|png|gif|webp|heic|heif)(\?|$)/i.test(
+                            url
+                          ) ||
+                            url.includes('firebasestorage') ||
+                            url.includes('drive.google.com')))
+                      if (!isImage || isPdf) return null
+                      return (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={url}
+                            alt="Comprobante de pago"
+                            className="mt-1 max-h-64 max-w-full rounded-lg border border-gray-200 object-contain"
+                          />
+                        </a>
+                      )
+                    })()}
+                  </div>
                 )}
                 {!selected.payment.manualMethod &&
                   !selected.payment.paymentReference &&
