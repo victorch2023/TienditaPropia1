@@ -10,6 +10,12 @@ export const CITROLEAF_STORE_ID = 'citroleaf'
  */
 export const CITROLEAF_SINGLE_PRODUCT_MODE = true
 
+/**
+ * Omite boleta/factura en checkout (muestra "Constancia de Pago" / JA).
+ * Poner `false` para reactivar comprobante fiscal.
+ */
+export const CITROLEAF_SKIP_FISCAL_RECEIPT = true
+
 /** Elige el producto al que apunta Comprar / catálogo en modo single-product. */
 export function pickCitroleafSingleProduct(
   products: Product[]

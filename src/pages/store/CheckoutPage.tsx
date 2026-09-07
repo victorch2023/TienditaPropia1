@@ -11,10 +11,17 @@ import {
 import { getShippingCost } from '../../services/store'
 import { chargeWithCulqi, initCulqiCheckout } from '../../services/culqi'
 import { CULQI_PUBLIC_KEY } from '../../services/firebase'
+import {
+  CITROLEAF_SKIP_FISCAL_RECEIPT,
+  CITROLEAF_STORE_ID,
+} from '../../config/stores'
 import { validateDNI, validateRUC } from '../../utils/fiscal'
 import { formatSoles, calculateTotal } from '../../utils/money'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import type { FiscalData, ManualPaymentMethod, OrderItem, ShippingAddress } from '../../types'
+
+const JA_INSTAGRAM_MENTION_URL =
+  'https://www.instagram.com/p/DcuN9oOmBL1/?stkn=MXhjbmZtcDFlanN1YQ=='
 
 type Step = 1 | 2 | 3
 
@@ -54,6 +61,9 @@ export function CheckoutPage() {
   const [paymentReference, setPaymentReference] = useState('')
   const [proofUrl, setProofUrl] = useState('')
 
+  const skipFiscalReceipt =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_SKIP_FISCAL_RECEIPT
+
   const shippingCost = shipping.distrito
     ? getShippingCost(config, shipping.distrito)
     : config.shippingDefault
@@ -79,6 +89,10 @@ export function CheckoutPage() {
   }
 
   const validateStep2 = () => {
+    if (skipFiscalReceipt) {
+      setError('')
+      return true
+    }
     if (fiscalType === 'boleta') {
       if (!validateDNI(dni)) {
         setError('DNI inválido (8 dígitos)')
@@ -103,6 +117,15 @@ export function CheckoutPage() {
   }
 
   const buildFiscal = (): FiscalData => {
+    if (skipFiscalReceipt) {
+      return {
+        tipo: 'boleta',
+        documento: '00000000',
+        nombreCompleto:
+          shipping.nombre.trim() || shipping.email.trim() || 'Cliente',
+        status: 'pendiente',
+      }
+    }
     if (fiscalType === 'boleta') {
       return {
         tipo: 'boleta',
@@ -336,60 +359,93 @@ export function CheckoutPage() {
 
       {step === 2 && (
         <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="font-semibold">Comprobante fiscal</h2>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={fiscalType === 'boleta'}
-                onChange={() => setFiscalType('boleta')}
-              />
-              Boleta (DNI)
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={fiscalType === 'factura'}
-                onChange={() => setFiscalType('factura')}
-              />
-              Factura (RUC)
-            </label>
-          </div>
-          {fiscalType === 'boleta' ? (
+          {skipFiscalReceipt ? (
             <>
-              <input
-                placeholder="DNI (8 dígitos)"
-                value={dni}
-                onChange={(e) => setDni(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Nombre completo"
-                value={nombreCompleto}
-                onChange={(e) => setNombreCompleto(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
+              <h2 className="font-semibold text-gray-900">Constancia de Pago</h2>
+              <div className="space-y-3 text-sm leading-relaxed text-gray-700">
+                <p>
+                  Luego del pago se le enviará una constancia de recibo por email.
+                  “Citroleaf” es un proyecto escolar participante del programa Junior
+                  Achievement. Por el momento, no estamos habilitados para emitir
+                  comprobantes contables debido a esta razón. Pero agradecemos
+                  muchísimo el apoyo a nuestro producto “Citroleaf”. Adjuntamos el
+                  link en Instagram de “Junior Achievement”, en donde se nos menciona
+                  como proyecto participante.
+                </p>
+                <p>
+                  <a
+                    href={JA_INSTAGRAM_MENTION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-600 underline underline-offset-2 hover:text-brand-700"
+                  >
+                    Ver mención en Instagram (Junior Achievement)
+                  </a>
+                </p>
+              </div>
             </>
           ) : (
             <>
-              <input
-                placeholder="RUC (11 dígitos)"
-                value={ruc}
-                onChange={(e) => setRuc(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Razón social"
-                value={razonSocial}
-                onChange={(e) => setRazonSocial(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Dirección fiscal"
-                value={direccionFiscal}
-                onChange={(e) => setDireccionFiscal(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
+              <h2 className="font-semibold">Comprobante fiscal</h2>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={fiscalType === 'boleta'}
+                    onChange={() => setFiscalType('boleta')}
+                  />
+                  Boleta (DNI)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={fiscalType === 'factura'}
+                    onChange={() => setFiscalType('factura')}
+                  />
+                  Factura (RUC)
+                </label>
+              </div>
+              {fiscalType === 'boleta' ? (
+                <>
+                  <input
+                    placeholder="DNI (8 dígitos)"
+                    value={dni}
+                    onChange={(e) =>
+                      setDni(e.target.value.replace(/\D/g, '').slice(0, 8))
+                    }
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="Nombre completo"
+                    value={nombreCompleto}
+                    onChange={(e) => setNombreCompleto(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </>
+              ) : (
+                <>
+                  <input
+                    placeholder="RUC (11 dígitos)"
+                    value={ruc}
+                    onChange={(e) =>
+                      setRuc(e.target.value.replace(/\D/g, '').slice(0, 11))
+                    }
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="Razón social"
+                    value={razonSocial}
+                    onChange={(e) => setRazonSocial(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="Dirección fiscal"
+                    value={direccionFiscal}
+                    onChange={(e) => setDireccionFiscal(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </>
+              )}
             </>
           )}
           <div className="flex gap-3">
@@ -428,7 +484,13 @@ export function CheckoutPage() {
             </div>
           </dl>
           <p className="text-sm text-gray-500">
-            Comprobante: {fiscalType === 'boleta' ? `Boleta - DNI ${dni}` : `Factura - RUC ${ruc}`}
+            {skipFiscalReceipt
+              ? 'Constancia de pago por email (sin comprobante fiscal)'
+              : `Comprobante: ${
+                  fiscalType === 'boleta'
+                    ? `Boleta - DNI ${dni}`
+                    : `Factura - RUC ${ruc}`
+                }`}
           </p>
 
           <div className="rounded-lg bg-gray-50 p-4">

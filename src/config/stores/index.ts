@@ -21,6 +21,7 @@ export {
   CITROLEAF_META,
   CITROLEAF_STORE_CONFIG,
   CITROLEAF_SINGLE_PRODUCT_MODE,
+  CITROLEAF_SKIP_FISCAL_RECEIPT,
   pickCitroleafSingleProduct,
 } from './citroleaf'
 export { TIENDITA_META, TIENDITA_STORE_CONFIG } from './tiendita'
