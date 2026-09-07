@@ -285,7 +285,7 @@ export function AdminOrdersPage() {
                 <dd>{formatSoles(selected.subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt>IGV</dt>
+                <dt>IGV (incluido)</dt>
                 <dd>{formatSoles(selected.igv)}</dd>
               </div>
               <div className="flex justify-between">

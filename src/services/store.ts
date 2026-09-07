@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -10,6 +11,7 @@ import {
 import { db } from './firebase'
 import { demoError, isDemoMode } from '../config/demo'
 import {
+  CITROLEAF_STORE_ID,
   DEFAULT_STORE_ID,
   LEGACY_CONFIG_DOC_ID,
   STORE_REGISTRY,
@@ -23,15 +25,61 @@ import {
 } from '../types'
 import { stripUndefined } from '../utils/firestore'
 
+/** Mapa de envío del seed antiguo de Citroleaf (San Isidro = S/10, etc.). */
+const STALE_CITROLEAF_DISTRICT_SEED: Record<string, number> = {
+  Miraflores: 1000,
+  'San Isidro': 1000,
+  Surco: 1200,
+  Barranco: 1000,
+  'Jesús María': 1100,
+}
+
+function positiveDistrictMap(
+  map: Record<string, number> | undefined
+): Record<string, number> {
+  if (!map || typeof map !== 'object') return {}
+  return Object.fromEntries(
+    Object.entries(map).filter(([, v]) => typeof v === 'number' && v > 0)
+  )
+}
+
+function isStaleCitroleafDistrictSeed(map: Record<string, number>): boolean {
+  const keys = Object.keys(map)
+  const staleKeys = Object.keys(STALE_CITROLEAF_DISTRICT_SEED)
+  if (keys.length !== staleKeys.length) return false
+  return staleKeys.every((k) => map[k] === STALE_CITROLEAF_DISTRICT_SEED[k])
+}
+
 export function parseStoreConfigData(
   data: Record<string, unknown> | undefined,
   storeId?: string
 ): StoreConfig {
   const base = storeId ? getDemoStoreConfig(storeId) : DEFAULT_STORE_CONFIG
   if (!data) return base
+
+  // No heredar shippingByDistrito del demo cuando hay doc en Firestore:
+  // antes San Isidro=10 del seed/demo tapaba Envío por defecto=8 del admin.
+  const fromDb = positiveDistrictMap(
+    data.shippingByDistrito as Record<string, number> | undefined
+  )
+  let shippingByDistrito =
+    data.shippingByDistrito != null ? fromDb : {}
+
+  if (
+    storeId === CITROLEAF_STORE_ID &&
+    isStaleCitroleafDistrictSeed(shippingByDistrito)
+  ) {
+    shippingByDistrito = {}
+  }
+
   return {
     ...base,
     ...data,
+    shippingDefault:
+      typeof data.shippingDefault === 'number'
+        ? data.shippingDefault
+        : base.shippingDefault,
+    shippingByDistrito,
     payments: {
       ...DEFAULT_PAYMENTS_CONFIG,
       ...base.payments,
@@ -95,22 +143,58 @@ export async function updateStoreConfig(
   config: Partial<StoreConfig>
 ): Promise<void> {
   if (isDemoMode()) throw demoError('Guardar configuración')
-  await setDoc(
-    doc(db, 'stores', storeId),
-    stripUndefined({
-      ...config,
-      slug: storeId,
-      active: config.active ?? true,
-      updatedAt: Date.now(),
-    }),
-    { merge: true }
-  )
-  if (storeId === DEFAULT_STORE_ID) {
+
+  // merge:true fusiona mapas anidados. Para shippingByDistrito hay que
+  // borrar el campo y reescribirlo; si no, queda San Isidro=10 huérfano.
+  const hasDistricts = config.shippingByDistrito != null
+  const districts = hasDistricts
+    ? positiveDistrictMap(config.shippingByDistrito)
+    : undefined
+
+  const basePayload = stripUndefined({
+    ...config,
+    shippingByDistrito: undefined,
+    slug: storeId,
+    active: config.active ?? true,
+    updatedAt: Date.now(),
+  }) as Record<string, unknown>
+
+  const ref = doc(db, 'stores', storeId)
+
+  if (hasDistricts) {
     await setDoc(
-      doc(db, 'stores', LEGACY_CONFIG_DOC_ID),
-      stripUndefined({ ...config, updatedAt: Date.now() }),
+      ref,
+      { ...basePayload, shippingByDistrito: deleteField() },
       { merge: true }
     )
+    if (Object.keys(districts!).length > 0) {
+      await setDoc(ref, { shippingByDistrito: districts }, { merge: true })
+    }
+  } else {
+    await setDoc(ref, basePayload, { merge: true })
+  }
+
+  if (storeId === DEFAULT_STORE_ID) {
+    const legacyRef = doc(db, 'stores', LEGACY_CONFIG_DOC_ID)
+    const legacyBase = { ...basePayload }
+    delete legacyBase.slug
+    delete legacyBase.active
+    if (hasDistricts) {
+      await setDoc(
+        legacyRef,
+        { ...legacyBase, shippingByDistrito: deleteField() },
+        { merge: true }
+      )
+      if (Object.keys(districts!).length > 0) {
+        await setDoc(
+          legacyRef,
+          { shippingByDistrito: districts },
+          { merge: true }
+        )
+      }
+    } else {
+      await setDoc(legacyRef, legacyBase, { merge: true })
+    }
   }
 }
 
@@ -164,5 +248,7 @@ export async function listStores(): Promise<StoreMeta[]> {
 }
 
 export function getShippingCost(config: StoreConfig, distrito: string): number {
-  return config.shippingByDistrito[distrito] ?? config.shippingDefault
+  const override = config.shippingByDistrito[distrito]
+  if (override == null || override <= 0) return config.shippingDefault
+  return override
 }

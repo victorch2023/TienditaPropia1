@@ -5,6 +5,7 @@ import { useStoreConfig } from '../../hooks/useStoreConfig'
 import { formatSoles, calculateTotal } from '../../utils/money'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import {
+  CITROLEAF_HIDE_IGV_LINE,
   CITROLEAF_SINGLE_PRODUCT_MODE,
   CITROLEAF_STORE_ID,
 } from '../../config/stores'
@@ -14,6 +15,8 @@ export function CartPage() {
   const { config } = useStoreConfig()
   const { path, storeId } = useStore()
   const totals = calculateTotal(subtotal, config.shippingDefault, config.igvRate)
+  const hideIgvLine =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_HIDE_IGV_LINE
   // En modo single-product, /catalogo redirige al detalle; el link sigue siendo válido
   const continueShoppingTo = path('catalogo')
   const continueShoppingLabel =
@@ -95,10 +98,12 @@ export function CartPage() {
               <dt className="text-gray-600">Subtotal</dt>
               <dd>{formatSoles(totals.subtotal)}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-gray-600">IGV ({(config.igvRate * 100).toFixed(0)}%)</dt>
-              <dd>{formatSoles(totals.igv)}</dd>
-            </div>
+            {!hideIgvLine && (
+              <div className="flex justify-between">
+                <dt className="text-gray-500">IGV (incluido)</dt>
+                <dd className="text-gray-500">{formatSoles(totals.igv)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-gray-600">Envío (estimado)</dt>
               <dd>{formatSoles(totals.shipping)}</dd>

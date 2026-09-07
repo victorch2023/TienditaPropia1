@@ -7,14 +7,8 @@
     "accentColor": "#8B7355",
     "heroBannerUrl": "https://images.unsplash.com/photo-1466692476862-a44231189ab9?w=1200&h=800&fit=crop",
     "igvRate": 0.18,
-    "shippingDefault": 1200,
-    "shippingByDistrito": {
-      "Miraflores": 1000,
-      "San Isidro": 1000,
-      "Surco": 1200,
-      "Barranco": 1000,
-      "Jesús María": 1100
-    },
+    "shippingDefault": 800,
+    "shippingByDistrito": {},
     "payments": {
       "culqiEnabled": false,
       "yapeNumber": "900 111 222",

@@ -21,8 +21,14 @@ function emptyToUndefined(value: string | undefined): string | undefined {
 }
 
 function normalizeConfigForSave(config: StoreConfig): StoreConfig {
+  const shippingByDistrito = Object.fromEntries(
+    Object.entries(config.shippingByDistrito || {}).filter(
+      ([, v]) => typeof v === 'number' && v > 0
+    )
+  )
   return {
     ...config,
+    shippingByDistrito,
     logoUrl: config.logoUrl?.trim() ? toDirectImageUrl(config.logoUrl) : undefined,
     heroBannerUrl: config.heroBannerUrl?.trim()
       ? toDirectImageUrl(config.heroBannerUrl)
@@ -89,14 +95,16 @@ export function AdminConfigPage() {
   }
 
   const updateDistritoShipping = (distrito: string, soles: string) => {
-    const centavos = solesToCentavos(parseFloat(soles) || 0)
-    setConfig({
-      ...config,
-      shippingByDistrito: {
-        ...config.shippingByDistrito,
-        [distrito]: centavos,
-      },
-    })
+    const next = { ...config.shippingByDistrito }
+    const trimmed = soles.trim()
+    if (!trimmed) {
+      delete next[distrito]
+    } else {
+      const centavos = solesToCentavos(parseFloat(trimmed) || 0)
+      if (centavos > 0) next[distrito] = centavos
+      else delete next[distrito]
+    }
+    setConfig({ ...config, shippingByDistrito: next })
   }
 
   const updatePayments = (field: keyof StoreConfig['payments'], value: string | boolean) => {
@@ -434,25 +442,33 @@ export function AdminConfigPage() {
             Envío por distrito (opcional, S/)
           </label>
           <div className="max-h-48 overflow-y-auto space-y-2">
-            {LIMA_DISTRITOS.slice(0, 10).map((d) => (
-              <div key={d} className="flex items-center gap-3">
-                <span className="flex-1 text-sm">{d}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Por defecto"
-                  value={
-                    config.shippingByDistrito[d]
-                      ? centavosToSoles(config.shippingByDistrito[d])
-                      : ''
-                  }
-                  onChange={(e) => updateDistritoShipping(d, e.target.value)}
-                  className="w-24 rounded-lg border px-2 py-1 text-sm"
-                />
-              </div>
-            ))}
+            {(() => {
+              const preview: string[] = [...LIMA_DISTRITOS.slice(0, 10)]
+              const withOverride = Object.keys(config.shippingByDistrito || {}).filter(
+                (d) => (config.shippingByDistrito[d] ?? 0) > 0 && !preview.includes(d)
+              )
+              const districts = [...preview, ...withOverride.sort()]
+              return districts.map((d) => (
+                <div key={d} className="flex items-center gap-3">
+                  <span className="flex-1 text-sm">{d}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Por defecto"
+                    value={
+                      config.shippingByDistrito[d]
+                        ? centavosToSoles(config.shippingByDistrito[d])
+                        : ''
+                    }
+                    onChange={(e) => updateDistritoShipping(d, e.target.value)}
+                    className="w-24 rounded-lg border px-2 py-1 text-sm"
+                  />
+                </div>
+              ))
+            })()}
             <p className="text-xs text-gray-500">
-              Configura distritos adicionales editando Firestore directamente o extendiendo este formulario.
+              Vacío = usa el envío por defecto. Distritos con override fuera de la lista
+              inicial también aparecen aquí.
             </p>
           </div>
         </div>

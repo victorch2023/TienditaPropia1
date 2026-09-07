@@ -12,6 +12,7 @@ import { getShippingCost } from '../../services/store'
 import { chargeWithCulqi, initCulqiCheckout } from '../../services/culqi'
 import { CULQI_PUBLIC_KEY } from '../../services/firebase'
 import {
+  CITROLEAF_HIDE_IGV_LINE,
   CITROLEAF_SKIP_FISCAL_RECEIPT,
   CITROLEAF_STORE_ID,
 } from '../../config/stores'
@@ -67,6 +68,8 @@ export function CheckoutPage() {
 
   const skipFiscalReceipt =
     storeId === CITROLEAF_STORE_ID && CITROLEAF_SKIP_FISCAL_RECEIPT
+  const hideIgvLine =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_HIDE_IGV_LINE
 
   const shippingCost = shipping.distrito
     ? getShippingCost(config, shipping.distrito)
@@ -491,10 +494,12 @@ export function CheckoutPage() {
               <dt>Subtotal</dt>
               <dd>{formatSoles(totals.subtotal)}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt>IGV</dt>
-              <dd>{formatSoles(totals.igv)}</dd>
-            </div>
+            {!hideIgvLine && (
+              <div className="flex justify-between text-gray-500">
+                <dt>IGV (incluido)</dt>
+                <dd>{formatSoles(totals.igv)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt>Envío ({shipping.distrito})</dt>
               <dd>{formatSoles(totals.shipping)}</dd>

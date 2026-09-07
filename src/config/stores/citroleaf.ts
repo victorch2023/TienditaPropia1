@@ -16,6 +16,13 @@ export const CITROLEAF_SINGLE_PRODUCT_MODE = true
  */
 export const CITROLEAF_SKIP_FISCAL_RECEIPT = true
 
+/**
+ * Oculta la línea de desglose IGV en carrito/checkout (el IGV sigue
+ * incluido en el precio; solo no se muestra el detalle).
+ * Poner `false` para reactivar la línea informativa "IGV (incluido)".
+ */
+export const CITROLEAF_HIDE_IGV_LINE = true
+
 /** Elige el producto al que apunta Comprar / catálogo en modo single-product. */
 export function pickCitroleafSingleProduct(
   products: Product[]
@@ -56,14 +63,10 @@ export const CITROLEAF_STORE_CONFIG: StoreConfig = {
   heroBannerUrl:
     'https://images.unsplash.com/photo-1466692476862-a44231189ab9?w=1200&h=800&fit=crop',
   backgroundImageUrl: undefined,
-  shippingDefault: 1200,
-  shippingByDistrito: {
-    Miraflores: 1000,
-    'San Isidro': 1000,
-    Surco: 1200,
-    Barranco: 1000,
-    'Jesús María': 1100,
-  },
+  /** S/ 8,00 — alineado con Admin → Envío por defecto */
+  shippingDefault: 800,
+  /** Sin overrides: el checkout usa shippingDefault salvo distrito configurado en Admin/Firestore */
+  shippingByDistrito: {},
   payments: {
     culqiEnabled: false,
     yapeNumber: '900 111 222',
