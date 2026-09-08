@@ -43,11 +43,17 @@ function positiveDistrictMap(
   )
 }
 
+/**
+ * Seed viejo de Citroleaf (San Isidro=10, etc.). Detecta mapa completo O
+ * parcial: p.ej. Barranco=0 en Firestore se filtra y el match exacto fallaba,
+ * dejando San Isidro=1000 activo sobre shippingDefault=800.
+ */
 function isStaleCitroleafDistrictSeed(map: Record<string, number>): boolean {
-  const keys = Object.keys(map)
-  const staleKeys = Object.keys(STALE_CITROLEAF_DISTRICT_SEED)
-  if (keys.length !== staleKeys.length) return false
-  return staleKeys.every((k) => map[k] === STALE_CITROLEAF_DISTRICT_SEED[k])
+  const entries = Object.entries(map).filter(
+    ([, v]) => typeof v === 'number' && v > 0
+  )
+  if (entries.length === 0) return false
+  return entries.every(([k, v]) => STALE_CITROLEAF_DISTRICT_SEED[k] === v)
 }
 
 export function parseStoreConfigData(
