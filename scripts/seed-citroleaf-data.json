@@ -16,7 +16,7 @@
       "bankName": "BCP",
       "bankAccount": "191-98765432-0-11",
       "bankCCI": "00219100987654321100",
-      "paymentInstructions": "Paga por Yape, Plin o transferencia el monto exacto e indica tu número de pedido. Verificamos en breve."
+      "paymentInstructions": "Paga por Yape o Plin el monto exacto e indica tu número de pedido. Verificamos en breve."
     },
     "imageHostingNote": "Usa URLs públicas (Unsplash, Drive archivo compartido). No pegues el enlace de una carpeta Drive."
   },

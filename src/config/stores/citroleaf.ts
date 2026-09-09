@@ -23,6 +23,13 @@ export const CITROLEAF_SKIP_FISCAL_RECEIPT = true
  */
 export const CITROLEAF_HIDE_IGV_LINE = true
 
+/**
+ * Deshabilita temporalmente pago por transferencia bancaria (checkout +
+ * campos bancarios en Admin). Solo Yape y Plin.
+ * Poner `false` para reactivar transferencia / BCP / CCI.
+ */
+export const CITROLEAF_DISABLE_BANK_TRANSFER = true
+
 /** Elige el producto al que apunta Comprar / catálogo en modo single-product. */
 export function pickCitroleafSingleProduct(
   products: Product[]
@@ -75,7 +82,7 @@ export const CITROLEAF_STORE_CONFIG: StoreConfig = {
     bankAccount: '191-98765432-0-11',
     bankCCI: '00219100987654321100',
     paymentInstructions:
-      'Paga por Yape, Plin o transferencia el monto exacto e indica tu número de pedido. Verificamos en breve.',
+      'Paga por Yape o Plin el monto exacto e indica tu número de pedido. Verificamos en breve.',
   },
   imageHostingNote:
     'Usa URLs públicas (Unsplash, Drive archivo compartido). No pegues el enlace de una carpeta Drive.',

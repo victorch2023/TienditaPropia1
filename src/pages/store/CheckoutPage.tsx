@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LIMA_DISTRITOS } from '../../data/lima-distritos'
 import { useCart } from '../../hooks/useCart'
@@ -12,6 +12,7 @@ import { getShippingCost } from '../../services/store'
 import { chargeWithCulqi, initCulqiCheckout } from '../../services/culqi'
 import { CULQI_PUBLIC_KEY } from '../../services/firebase'
 import {
+  CITROLEAF_DISABLE_BANK_TRANSFER,
   CITROLEAF_HIDE_IGV_LINE,
   CITROLEAF_SKIP_FISCAL_RECEIPT,
   CITROLEAF_STORE_ID,
@@ -33,6 +34,17 @@ const MANUAL_METHOD_LABELS: Record<ManualPaymentMethod, string> = {
   yape: 'Yape',
   plin: 'Plin',
   transferencia: 'Transferencia bancaria',
+}
+
+const ALL_MANUAL_METHODS: ManualPaymentMethod[] = ['yape', 'plin', 'transferencia']
+
+/** Quita menciones a transferencia en textos guardados en Admin/Firestore. */
+function stripTransferenciaFromInstructions(text: string): string {
+  return text
+    .replace(/Yape,\s*Plin\s*o\s*transferencia/gi, 'Yape o Plin')
+    .replace(/Yape,\s*Plin\s*y\s*transferencias?\s*bancarias?/gi, 'Yape y Plin')
+    .replace(/\s*o\s*transferencia(s)?(\s*bancarias?)?/gi, '')
+    .replace(/\s*y\s*transferencia(s)?(\s*bancarias?)?/gi, '')
 }
 
 export function CheckoutPage() {
@@ -70,12 +82,29 @@ export function CheckoutPage() {
     storeId === CITROLEAF_STORE_ID && CITROLEAF_SKIP_FISCAL_RECEIPT
   const hideIgvLine =
     storeId === CITROLEAF_STORE_ID && CITROLEAF_HIDE_IGV_LINE
+  const disableBankTransfer =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_DISABLE_BANK_TRANSFER
+
+  const manualMethods: ManualPaymentMethod[] = disableBankTransfer
+    ? ALL_MANUAL_METHODS.filter((m) => m !== 'transferencia')
+    : ALL_MANUAL_METHODS
+
+  useEffect(() => {
+    if (disableBankTransfer && manualMethod === 'transferencia') {
+      setManualMethod('yape')
+    }
+  }, [disableBankTransfer, manualMethod])
 
   const shippingCost = shipping.distrito
     ? getShippingCost(config, shipping.distrito)
     : config.shippingDefault
   const totals = calculateTotal(subtotal, shippingCost, config.igvRate)
   const payments = config.payments
+  const paymentInstructionsText = payments.paymentInstructions
+    ? disableBankTransfer
+      ? stripTransferenciaFromInstructions(payments.paymentInstructions)
+      : payments.paymentInstructions
+    : undefined
 
   if (items.length === 0 && step < 3) {
     navigate(path('carrito'))
@@ -522,7 +551,7 @@ export function CheckoutPage() {
           <div className="rounded-lg bg-gray-50 p-4">
             <h3 className="mb-3 text-sm font-medium text-gray-900">Método de pago</h3>
             <div className="flex flex-wrap gap-3">
-              {(['yape', 'plin', 'transferencia'] as ManualPaymentMethod[]).map((m) => (
+              {manualMethods.map((m) => (
                 <label key={m} className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
@@ -537,8 +566,8 @@ export function CheckoutPage() {
 
           <div className="rounded-lg border border-brand-100 bg-brand-50 p-4">
             <h3 className="mb-2 text-sm font-medium text-brand-900">Instrucciones de pago</h3>
-            {payments.paymentInstructions && (
-              <p className="mb-2 text-sm text-brand-800">{payments.paymentInstructions}</p>
+            {paymentInstructionsText && (
+              <p className="mb-2 text-sm text-brand-800">{paymentInstructionsText}</p>
             )}
             {renderPaymentInstructions()}
             <p className="mt-2 text-sm font-medium text-brand-900">

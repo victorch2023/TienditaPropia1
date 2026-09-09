@@ -12,6 +12,10 @@ import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import { getStoreThemeStyle } from '../../utils/theme'
 import { getDocumentBaseHref } from '../../config/domains'
+import {
+  CITROLEAF_DISABLE_BANK_TRANSFER,
+  CITROLEAF_STORE_ID,
+} from '../../config/stores'
 import type { StoreConfig } from '../../types'
 import { DEFAULT_STORE_CONFIG } from '../../types'
 
@@ -59,6 +63,8 @@ const STOREFRONT_URL = `${window.location.origin}${getDocumentBaseHref()}`
 
 export function AdminConfigPage() {
   const { storeId } = useStore()
+  const disableBankTransfer =
+    storeId === CITROLEAF_STORE_ID && CITROLEAF_DISABLE_BANK_TRANSFER
   const [config, setConfig] = useState<StoreConfig>(DEFAULT_STORE_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -474,7 +480,11 @@ export function AdminConfigPage() {
         </div>
 
         <div className="border-t pt-4">
-          <h2 className="mb-3 font-semibold text-gray-900">Pagos manuales (Yape, Plin, transferencia)</h2>
+          <h2 className="mb-3 font-semibold text-gray-900">
+            {disableBankTransfer
+              ? 'Pagos manuales (Yape, Plin)'
+              : 'Pagos manuales (Yape, Plin, transferencia)'}
+          </h2>
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700">Número Yape</label>
@@ -494,34 +504,38 @@ export function AdminConfigPage() {
                 className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
               />
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Banco</label>
-                <input
-                  value={config.payments.bankName || ''}
-                  onChange={(e) => updatePayments('bankName', e.target.value)}
-                  placeholder="BCP, Interbank..."
-                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Número de cuenta</label>
-                <input
-                  value={config.payments.bankAccount || ''}
-                  onChange={(e) => updatePayments('bankAccount', e.target.value)}
-                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">CCI (Perú)</label>
-              <input
-                value={config.payments.bankCCI || ''}
-                onChange={(e) => updatePayments('bankCCI', e.target.value)}
-                placeholder="20 dígitos"
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-              />
-            </div>
+            {!disableBankTransfer && (
+              <>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Banco</label>
+                    <input
+                      value={config.payments.bankName || ''}
+                      onChange={(e) => updatePayments('bankName', e.target.value)}
+                      placeholder="BCP, Interbank..."
+                      className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Número de cuenta</label>
+                    <input
+                      value={config.payments.bankAccount || ''}
+                      onChange={(e) => updatePayments('bankAccount', e.target.value)}
+                      className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">CCI (Perú)</label>
+                  <input
+                    value={config.payments.bankCCI || ''}
+                    onChange={(e) => updatePayments('bankCCI', e.target.value)}
+                    placeholder="20 dígitos"
+                    className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Instrucciones de pago
