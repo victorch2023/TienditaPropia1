@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "setup-check": "bash scripts/setup-check.sh",
     "seed": "node scripts/seed-firestore.mjs",
-    "seed:citroleaf": "node scripts/seed-citroleaf.mjs"
+    "seed:citroleaf": "node scripts/seed-citroleaf.mjs",
+    "seed:yukiko": "node scripts/seed-yukiko.mjs"
   },
   "dependencies": {
     "firebase": "^11.0.2",
