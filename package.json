@@ -11,7 +11,8 @@
     "setup-check": "bash scripts/setup-check.sh",
     "seed": "node scripts/seed-firestore.mjs",
     "seed:citroleaf": "node scripts/seed-citroleaf.mjs",
-    "seed:yukiko": "node scripts/seed-yukiko.mjs"
+    "seed:piyukis": "node scripts/seed-piyukis.mjs",
+    "migrate:yukiko-to-piyukis": "node scripts/migrate-yukiko-to-piyukis.mjs"
   },
   "dependencies": {
     "firebase": "^11.0.2",

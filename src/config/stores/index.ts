@@ -15,12 +15,12 @@ import {
   TIENDITA_STORE_CONFIG,
 } from './tiendita'
 import {
-  YUKIKO_CATEGORIES,
-  YUKIKO_META,
-  YUKIKO_PRODUCTS,
-  YUKIKO_STORE_CONFIG,
-  YUKIKO_STORE_ID,
-} from './yukiko'
+  PIYUKIS_CATEGORIES,
+  PIYUKIS_META,
+  PIYUKIS_PRODUCTS,
+  PIYUKIS_STORE_CONFIG,
+  PIYUKIS_STORE_ID,
+} from './piyukis'
 
 export { DEFAULT_STORE_ID, LEGACY_CONFIG_DOC_ID, KNOWN_STORE_IDS } from './constants'
 export {
@@ -35,10 +35,10 @@ export {
 } from './citroleaf'
 export { TIENDITA_META, TIENDITA_STORE_CONFIG } from './tiendita'
 export {
-  YUKIKO_STORE_ID,
-  YUKIKO_META,
-  YUKIKO_STORE_CONFIG,
-} from './yukiko'
+  PIYUKIS_STORE_ID,
+  PIYUKIS_META,
+  PIYUKIS_STORE_CONFIG,
+} from './piyukis'
 
 export const STORE_REGISTRY: StoreMeta[] = [
   {
@@ -57,30 +57,30 @@ export const STORE_REGISTRY: StoreMeta[] = [
     instagram: CITROLEAF_META.instagram,
   },
   {
-    id: YUKIKO_META.id,
-    slug: YUKIKO_META.slug,
-    name: YUKIKO_META.name,
-    tagline: YUKIKO_META.tagline,
-    active: YUKIKO_META.active,
+    id: PIYUKIS_META.id,
+    slug: PIYUKIS_META.slug,
+    name: PIYUKIS_META.name,
+    tagline: PIYUKIS_META.tagline,
+    active: PIYUKIS_META.active,
   },
 ]
 
 const DEMO_CONFIG: Record<string, StoreConfig> = {
   [DEFAULT_STORE_ID]: TIENDITA_STORE_CONFIG,
   [CITROLEAF_STORE_ID]: CITROLEAF_STORE_CONFIG,
-  [YUKIKO_STORE_ID]: YUKIKO_STORE_CONFIG,
+  [PIYUKIS_STORE_ID]: PIYUKIS_STORE_CONFIG,
 }
 
 const DEMO_CATEGORIES: Record<string, Category[]> = {
   [DEFAULT_STORE_ID]: TIENDITA_CATEGORIES,
   [CITROLEAF_STORE_ID]: CITROLEAF_CATEGORIES,
-  [YUKIKO_STORE_ID]: YUKIKO_CATEGORIES,
+  [PIYUKIS_STORE_ID]: PIYUKIS_CATEGORIES,
 }
 
 const DEMO_PRODUCTS: Record<string, Product[]> = {
   [DEFAULT_STORE_ID]: TIENDITA_PRODUCTS,
   [CITROLEAF_STORE_ID]: CITROLEAF_PRODUCTS,
-  [YUKIKO_STORE_ID]: YUKIKO_PRODUCTS,
+  [PIYUKIS_STORE_ID]: PIYUKIS_PRODUCTS,
 }
 
 export function isKnownStoreId(storeId: string): boolean {

@@ -1,14 +1,14 @@
 /**
- * Semilla Tiendita de Yukiko (stores/yukiko).
+ * Semilla Piyukis (stores/piyukis).
  *
  * Requisitos: GOOGLE_APPLICATION_CREDENTIALS + VITE_FIREBASE_PROJECT_ID
  *
  * Uso:
- *   npm run seed:yukiko
+ *   npm run seed:piyukis
  *
  * Acciones:
- * 1. Escribe/merge stores/yukiko (config editable luego en Admin)
- * 2. No toca admins existentes (añade yukiko solo si pasas --patch-admins)
+ * 1. Escribe/merge stores/piyukis (config editable luego en Admin)
+ * 2. No toca admins existentes (añade piyukis solo si pasas --patch-admins)
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -17,7 +17,7 @@ import admin from 'firebase-admin'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = join(__dirname, '..')
-const STORE_ID = 'yukiko'
+const STORE_ID = 'piyukis'
 const patchAdmins = process.argv.includes('--patch-admins')
 
 function loadEnv() {
@@ -44,7 +44,7 @@ if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     'Error: define GOOGLE_APPLICATION_CREDENTIALS con la ruta a tu serviceAccountKey.json'
   )
   console.error(
-    '\nSin service account, crea en Firestore Console el documento stores/yukiko con el JSON de scripts/seed-yukiko-data.json → storeConfig (+ slug, active).'
+    '\nSin service account, crea en Firestore Console el documento stores/piyukis con el JSON de scripts/seed-piyukis-data.json → storeConfig (+ slug, active).'
   )
   process.exit(1)
 }
@@ -58,11 +58,11 @@ admin.initializeApp({ projectId })
 const db = admin.firestore()
 
 const seed = JSON.parse(
-  readFileSync(join(__dirname, 'seed-yukiko-data.json'), 'utf8')
+  readFileSync(join(__dirname, 'seed-piyukis-data.json'), 'utf8')
 )
 const now = Date.now()
 
-async function seedYukiko() {
+async function seedPiyukis() {
   const { storeConfig, categories, products } = seed
 
   await db.doc(`stores/${STORE_ID}`).set(
@@ -91,7 +91,7 @@ async function seedYukiko() {
   }
 }
 
-async function patchAdminsWithYukiko() {
+async function patchAdminsWithPiyukis() {
   const snap = await db.collection('users').where('role', '==', 'admin').get()
   for (const doc of snap.docs) {
     const data = doc.data()
@@ -109,12 +109,12 @@ async function patchAdminsWithYukiko() {
 
 async function main() {
   console.log(`Sembrando ${STORE_ID} en proyecto: ${projectId}`)
-  await seedYukiko()
+  await seedPiyukis()
   if (patchAdmins) {
-    await patchAdminsWithYukiko()
+    await patchAdminsWithPiyukis()
   } else {
     console.log(
-      'ℹ Admíns no modificados. Para añadir yukiko a adminStores: npm run seed:yukiko -- --patch-admins'
+      'ℹ Admíns no modificados. Para añadir piyukis a adminStores: npm run seed:piyukis -- --patch-admins'
     )
   }
   console.log(`\nListo. URL: /s/${STORE_ID}`)

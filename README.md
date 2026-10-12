@@ -1,12 +1,12 @@
 # TienditaPropia — Multi-tienda (Perú)
 
-Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`), **Citroleaf** (`citroleaf`) y **Tiendita de Yukiko** (`yukiko`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
+Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`), **Citroleaf** (`citroleaf`) y **Piyukis** (`piyukis`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
 
-**Dominio Citroleaf:** `https://www.citroleaf.com` → abre Citroleaf en `/` (sin prefijo `/s/citroleaf`). Rutas `/s/yukiko`, `/s/tiendita`, etc. siguen abriendo esa tienda en ese host.
+**Dominio Citroleaf:** `https://www.citroleaf.com` → abre Citroleaf en `/` (sin prefijo `/s/citroleaf`). Rutas `/s/piyukis`, `/s/tiendita`, etc. siguen abriendo esa tienda en ese host.
 
-**URL Yukiko sin dominio Citroleaf:** el repo principal tiene `public/CNAME` = `www.citroleaf.com`, así que `victorch2023.github.io/TienditaPropia1/…` hace **301 → citroleaf.com**. Un mismo site de GitHub Pages no puede servir a la vez en `github.io` sin redirect y en custom domain. Por eso el deploy sin CNAME vive en el repo hermano [`TienditaPropia-stores`](https://github.com/victorch2023/TienditaPropia-stores):
+**URL Piyukis sin dominio Citroleaf:** el repo principal tiene `public/CNAME` = `www.citroleaf.com`, así que `victorch2023.github.io/TienditaPropia1/…` hace **301 → citroleaf.com**. Un mismo site de GitHub Pages no puede servir a la vez en `github.io` sin redirect y en custom domain. Por eso el deploy sin CNAME vive en el repo hermano [`TienditaPropia-stores`](https://github.com/victorch2023/TienditaPropia-stores) (sin `public/CNAME` de Citroleaf). **Piyukis no tiene CNAME/dominio propio** — solo la URL de GitHub Pages:
 
-`https://victorch2023.github.io/TienditaPropia-stores/s/yukiko`
+`https://victorch2023.github.io/TienditaPropia-stores/s/piyukis`
 
 ### URLs de tiendas
 
@@ -16,8 +16,8 @@ Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**.
 | La Tiendita Chévere | `/s/tiendita` | `/s/tiendita/admin` |
 | Citroleaf (prefijo) | `/s/citroleaf` → `/` | `/s/citroleaf/admin` → `/admin` |
 | Citroleaf (www.citroleaf.com) | `/`, `/catalogo`, … | `/admin` |
-| Tiendita de Yukiko (Citroleaf host) | `https://www.citroleaf.com/s/yukiko` | `/s/yukiko/admin` |
-| Tiendita de Yukiko (**sin Citroleaf**) | `https://victorch2023.github.io/TienditaPropia-stores/s/yukiko` | mismo path `/s/yukiko/admin` |
+| Piyukis (Citroleaf host) | `https://www.citroleaf.com/s/piyukis` | `/s/piyukis/admin` |
+| Piyukis (**sin Citroleaf**) | `https://victorch2023.github.io/TienditaPropia-stores/s/piyukis` | mismo path `/s/piyukis/admin` |
 
 Basename: dominio custom / Firebase → `/`; `*.github.io/{repo}/` → `/{repo}`; Vite local → `/TienditaPropia1`.
 
@@ -29,10 +29,10 @@ Basename: dominio custom / Firebase → `/`; `*.github.io/{repo}/` → `/{repo}`
 - `products`, `categories`, `orders` llevan `storeId`
 - Carrito por tienda: `localStorage` key `cart-{storeId}`
 - Routing: `/s/:storeId/*` para vitrina y admin
-- Usuarios admin: `role: 'admin'` + `adminStores: ['tiendita','citroleaf','yukiko']`
+- Usuarios admin: `role: 'admin'` + `adminStores: ['tiendita','citroleaf','piyukis']`
   - Sin `adminStores`: solo admin de `tiendita` (compatibilidad)
 - Citroleaf home: estética cream/brown (Cormorant + Montserrat), independiente de tiendita
-- Yukiko home: storefront genérico (igual que tiendita); el nombre se edita en Admin → Config / Firestore `stores/yukiko.name`
+- Piyukis home: storefront genérico (igual que tiendita); el nombre se edita en Admin → Config / Firestore `stores/piyukis.name`
 - Modo demo: tiendas del registro con catálogo mock offline
 
 ### Asignar admin de una tienda
@@ -42,13 +42,13 @@ En Firestore → `users/{uid}`:
 ```json
 {
   "role": "admin",
-  "adminStores": ["tiendita", "citroleaf", "yukiko"]
+  "adminStores": ["tiendita", "citroleaf", "piyukis"]
 }
 ```
 
-Para solo Yukiko: `"adminStores": ["yukiko"]`.
+Para solo Piyukis: `"adminStores": ["piyukis"]`.
 
-O ejecuta `npm run seed:citroleaf` (añade tiendita+citroleaf) y/o `npm run seed:yukiko -- --patch-admins`.
+O ejecuta `npm run seed:citroleaf` (añade tiendita+citroleaf) y/o `npm run seed:piyukis -- --patch-admins`.
 
 ### Seed
 
@@ -56,11 +56,12 @@ O ejecuta `npm run seed:citroleaf` (añade tiendita+citroleaf) y/o `npm run seed
 export GOOGLE_APPLICATION_CREDENTIALS="/ruta/serviceAccountKey.json"
 npm run seed              # tiendita (+ stores/tiendita)
 npm run seed:citroleaf    # migra legacy + siembra Citroleaf + parchea admins
-npm run seed:yukiko       # stores/yukiko (config; sin productos demo)
+npm run seed:piyukis      # stores/piyukis (config; sin productos demo)
+npm run migrate:yukiko-to-piyukis  # si aún hay datos con storeId yukiko
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-**Firestore manual (si no hay service account):** crea el documento `stores/yukiko` con el contenido de `scripts/seed-yukiko-data.json` → `storeConfig`, más `"slug": "yukiko"` y `"active": true`.
+**Firestore manual (si no hay service account):** crea el documento `stores/piyukis` con el contenido de `scripts/seed-piyukis-data.json` → `storeConfig`, más `"slug": "piyukis"` y `"active": true`.
 
 ---
 
@@ -69,7 +70,7 @@ firebase deploy --only firestore:rules,firestore:indexes
 - App React + Vite + Tailwind con tienda, carrito, checkout y panel admin
 - **Modo demo**: sin `.env` o con valores de ejemplo, la app muestra productos/categorías mock
 - Script `npm run setup-check` — verifica Node, npm y variables de entorno
-- Scripts `npm run seed` / `npm run seed:citroleaf` / `npm run seed:yukiko`
+- Scripts `npm run seed` / `npm run seed:citroleaf` / `npm run seed:piyukis` / `npm run migrate:yukiko-to-piyukis`
 - `firebase.json`, reglas Firestore/Storage, índices y `.firebaserc.example`
 - Cloud Functions (Culqi + facturación stub), workflow GitHub Pages
 - Página 404, favicon, meta tags y `.env.example` comentado en español
@@ -86,7 +87,7 @@ firebase deploy --only firestore:rules,firestore:indexes
 | 4 | `cp .env.example .env` y pegar tus credenciales Firebase (incluye `VITE_FIREBASE_STORAGE_BUCKET`) |
 | 5 | `cp .firebaserc.example .firebaserc` y poner tu `projectId` |
 | 6 | `firebase login` y `firebase deploy --only firestore:rules,firestore:indexes,storage` |
-| 7 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed`, `seed:citroleaf`, `seed:yukiko` |
+| 7 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed`, `seed:citroleaf`, `seed:piyukis` |
 | 8 | Registrarte en `/s/{storeId}/cuenta` y poner `role=admin` + `adminStores` |
 | 9 | Configurar Yape/Plin en `/s/{storeId}/admin/config` |
 | 10 | (Opcional futuro) Cuenta Culqi, desplegar functions, activar pasarela en admin |

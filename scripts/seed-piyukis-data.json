@@ -1,11 +1,11 @@
 {
   "storeConfig": {
-    "name": "Tiendita de Yukiko",
+    "name": "Piyukis",
     "description": "Compra en línea con envío en Lima Metropolitana",
     "primaryColor": "#db2777",
     "primaryDark": "#be185d",
     "accentColor": "#f9a8d4",
-    "heroBannerUrl": "https://picsum.photos/seed/yukiko-hero/1200/400",
+    "heroBannerUrl": "https://picsum.photos/seed/piyukis-hero/1200/400",
     "igvRate": 0.18,
     "shippingDefault": 1200,
     "shippingByDistrito": {
