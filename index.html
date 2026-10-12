@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <!--
       Assets del build usan rutas relativas (vite base ./).
-      <base> elige prefijo según hostname: dominio custom → / ; github.io → /TienditaPropia1/
+      <base>: dominio custom / Firebase → / ; github.io → /{repo}/ ; local → /TienditaPropia1/
     -->
     <script>
       (function () {
@@ -14,8 +14,18 @@
           host === 'citroleaf.com' ||
           host === 'www.citroleaf.com' ||
           host.endsWith('.citroleaf.com')
+        var firebaseHost =
+          host.endsWith('.web.app') || host.endsWith('.firebaseapp.com')
         var citroleafPath = /\/s\/citroleaf(\/|$)/.test(path)
-        var base = custom ? '/' : '/TienditaPropia1/'
+        var base = '/'
+        if (!custom && !firebaseHost) {
+          if (host.endsWith('.github.io')) {
+            var seg = path.split('/').filter(Boolean)[0]
+            base = seg ? '/' + seg + '/' : '/'
+          } else {
+            base = '/TienditaPropia1/'
+          }
+        }
         document.write('<base href="' + base + '">')
         if (custom || citroleafPath) {
           document.title = 'Citroleaf'

@@ -4,11 +4,43 @@ export const DOMAIN_STORE_MAP: Record<string, string> = {
   'www.citroleaf.com': 'citroleaf',
 }
 
-/** Repo path on github.io (Vite project base without trailing slash). */
+/** Default repo path on github.io / Vite dev (without trailing slash). */
 export const GITHUB_PAGES_BASE = '/TienditaPropia1'
+
+/** Project-pages repo that serves multi-tienda without Citroleaf CNAME. */
+export const GITHUB_PAGES_STORES_BASE = '/TienditaPropia-stores'
 
 export function normalizeHostname(hostname: string): string {
   return hostname.trim().toLowerCase().replace(/\.$/, '')
+}
+
+/** Hosts that serve the SPA at site root (basename `/`). */
+export function isRootServedHostname(hostname?: string): boolean {
+  const host = normalizeHostname(
+    hostname ??
+      (typeof window !== 'undefined' ? window.location.hostname : ''),
+  )
+  if (!host) return false
+  if (getStoreIdFromHostname(host) != null) return true
+  if (host.endsWith('.web.app') || host.endsWith('.firebaseapp.com')) return true
+  return false
+}
+
+/**
+ * First path segment on github.io project pages, e.g. /TienditaPropia-stores/…
+ * Returns null for user/org site root or unknown hosts.
+ */
+export function getGithubPagesProjectBase(hostname?: string, pathname?: string): string | null {
+  const host = normalizeHostname(
+    hostname ??
+      (typeof window !== 'undefined' ? window.location.hostname : ''),
+  )
+  if (!host.endsWith('.github.io')) return null
+  const path =
+    pathname ??
+    (typeof window !== 'undefined' ? window.location.pathname : '')
+  const seg = path.split('/').filter(Boolean)[0]
+  return seg ? `/${seg}` : null
 }
 
 /**
@@ -41,11 +73,14 @@ export function isCustomDomainHostname(hostname?: string): boolean {
 
 /**
  * React Router basename:
- * - Custom domain (GitHub Pages serves at site root) → `/`
- * - github.io / local Vite → `/TienditaPropia1`
+ * - Custom domain / Firebase Hosting (site root) → `/`
+ * - github.io project pages → `/{repo}` (TienditaPropia1 or TienditaPropia-stores)
+ * - local Vite → `/TienditaPropia1`
  */
 export function getRouterBasename(hostname?: string): string {
-  if (isCustomDomainHostname(hostname)) return '/'
+  if (isRootServedHostname(hostname)) return '/'
+  const project = getGithubPagesProjectBase(hostname)
+  if (project) return project
   return GITHUB_PAGES_BASE
 }
 

@@ -2,9 +2,11 @@
 
 Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`), **Citroleaf** (`citroleaf`) y **Tiendita de Yukiko** (`yukiko`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
 
-**URL de producción (multi-tienda):** con el CNAME de GitHub Pages apuntando a Citroleaf, `victorch2023.github.io/TienditaPropia1/…` redirige a `www.citroleaf.com/…`. Las otras tiendas viven en `/s/{storeId}` en ese mismo host.
+**Dominio Citroleaf:** `https://www.citroleaf.com` → abre Citroleaf en `/` (sin prefijo `/s/citroleaf`). Rutas `/s/yukiko`, `/s/tiendita`, etc. siguen abriendo esa tienda en ese host.
 
-**Dominio Citroleaf:** `https://www.citroleaf.com` → abre Citroleaf en `/` (sin prefijo `/s/citroleaf`). Rutas `/s/yukiko`, `/s/tiendita`, etc. siguen abriendo esa tienda.
+**URL Yukiko sin dominio Citroleaf:** el repo principal tiene `public/CNAME` = `www.citroleaf.com`, así que `victorch2023.github.io/TienditaPropia1/…` hace **301 → citroleaf.com**. Un mismo site de GitHub Pages no puede servir a la vez en `github.io` sin redirect y en custom domain. Por eso el deploy sin CNAME vive en el repo hermano [`TienditaPropia-stores`](https://github.com/victorch2023/TienditaPropia-stores):
+
+`https://victorch2023.github.io/TienditaPropia-stores/s/yukiko`
 
 ### URLs de tiendas
 
@@ -14,9 +16,10 @@ Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**.
 | La Tiendita Chévere | `/s/tiendita` | `/s/tiendita/admin` |
 | Citroleaf (prefijo) | `/s/citroleaf` → `/` | `/s/citroleaf/admin` → `/admin` |
 | Citroleaf (www.citroleaf.com) | `/`, `/catalogo`, … | `/admin` |
-| Tiendita de Yukiko | `https://www.citroleaf.com/s/yukiko` | `/s/yukiko/admin` |
+| Tiendita de Yukiko (Citroleaf host) | `https://www.citroleaf.com/s/yukiko` | `/s/yukiko/admin` |
+| Tiendita de Yukiko (**sin Citroleaf**) | `https://victorch2023.github.io/TienditaPropia-stores/s/yukiko` | mismo path `/s/yukiko/admin` |
 
-En dominio custom el Router usa basename `/`; en github.io/local (sin CNAME) usa `/TienditaPropia1`.
+Basename: dominio custom / Firebase → `/`; `*.github.io/{repo}/` → `/{repo}`; Vite local → `/TienditaPropia1`.
 
 ---
 
