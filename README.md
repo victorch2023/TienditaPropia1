@@ -2,21 +2,21 @@
 
 Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`), **Citroleaf** (`citroleaf`) y **Tiendita de Yukiko** (`yukiko`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
 
-**URL de producción (multi-tienda):** `https://victorch2023.github.io/TienditaPropia1/`
+**URL de producción (multi-tienda):** con el CNAME de GitHub Pages apuntando a Citroleaf, `victorch2023.github.io/TienditaPropia1/…` redirige a `www.citroleaf.com/…`. Las otras tiendas viven en `/s/{storeId}` en ese mismo host.
 
-**Dominio Citroleaf:** `https://www.citroleaf.com` → abre la tienda Citroleaf en `/` (sin prefijo `/s/citroleaf`).
+**Dominio Citroleaf:** `https://www.citroleaf.com` → abre Citroleaf en `/` (sin prefijo `/s/citroleaf`). Rutas `/s/yukiko`, `/s/tiendita`, etc. siguen abriendo esa tienda.
 
 ### URLs de tiendas
 
 | Tienda | Storefront | Admin |
 |--------|------------|-------|
-| Selector (solo github.io) | `/` o `/tiendas` | — |
+| Selector (solo sin dominio custom) | `/` o `/tiendas` | — |
 | La Tiendita Chévere | `/s/tiendita` | `/s/tiendita/admin` |
-| Citroleaf (github.io) | `/s/citroleaf` | `/s/citroleaf/admin` |
+| Citroleaf (prefijo) | `/s/citroleaf` → `/` | `/s/citroleaf/admin` → `/admin` |
 | Citroleaf (www.citroleaf.com) | `/`, `/catalogo`, … | `/admin` |
-| Tiendita de Yukiko | `/s/yukiko` | `/s/yukiko/admin` |
+| Tiendita de Yukiko | `https://www.citroleaf.com/s/yukiko` | `/s/yukiko/admin` |
 
-En dominio custom el Router usa basename `/`; en github.io/local usa `/TienditaPropia1`.
+En dominio custom el Router usa basename `/`; en github.io/local (sin CNAME) usa `/TienditaPropia1`.
 
 ---
 

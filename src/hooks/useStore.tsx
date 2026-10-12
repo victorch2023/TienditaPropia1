@@ -78,3 +78,8 @@ export function useStore() {
   if (!ctx) throw new Error('useStore debe usarse dentro de StoreProvider')
   return ctx
 }
+
+/** Como useStore, pero null fuera de StoreProvider (p.ej. selector de tiendas). */
+export function useOptionalStore() {
+  return useContext(StoreContext)
+}

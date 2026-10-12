@@ -2,14 +2,17 @@ import { Link } from 'react-router-dom'
 import { isDemoMode } from '../config/demo'
 import { DEFAULT_STORE_ID } from '../config/stores'
 import { isCustomDomainHostname } from '../config/domains'
-import { buildStorePath } from '../hooks/useStore'
+import { buildStorePath, useOptionalStore } from '../hooks/useStore'
 
 export function DemoBanner() {
+  const store = useOptionalStore()
   if (!isDemoMode()) return null
 
-  const catalogTo = isCustomDomainHostname()
-    ? '/catalogo'
-    : buildStorePath(DEFAULT_STORE_ID, 'catalogo')
+  const catalogTo = store
+    ? store.path('catalogo')
+    : isCustomDomainHostname()
+      ? '/catalogo'
+      : buildStorePath(DEFAULT_STORE_ID, 'catalogo')
 
   return (
     <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">

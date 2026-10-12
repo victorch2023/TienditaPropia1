@@ -20,7 +20,7 @@ import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
 import { AdminConfigPage } from './pages/admin/AdminConfigPage'
 import { AdminBillingPage } from './pages/admin/AdminBillingPage'
 import { NotFoundPage } from './pages/NotFoundPage'
-import { DEFAULT_STORE_ID } from './config/stores'
+import { DEFAULT_STORE_ID, isKnownStoreId } from './config/stores'
 import {
   getRouterBasename,
   getStoreIdFromHostname,
@@ -49,8 +49,13 @@ function LegacyAdminRedirect() {
   return <Navigate to={`/s/${DEFAULT_STORE_ID}/admin${suffix}`} replace />
 }
 
-/** En dominio custom: `/s/citroleaf/catalogo` → `/catalogo` */
-function CustomDomainStorePrefixRedirect({
+/**
+ * En dominio custom:
+ * - `/s/{tiendaDelDominio}/…` → rutas canónicas en raíz (`/catalogo`, …)
+ * - `/s/{otraTienda}/…` → servir esa tienda (no forzar la del hostname)
+ * - storeId desconocido → home del dominio
+ */
+function CustomDomainStorePrefixRoute({
   expectedStoreId,
 }: {
   expectedStoreId: string
@@ -59,6 +64,9 @@ function CustomDomainStorePrefixRedirect({
   const suffix = rest ? `/${rest}` : '/'
   if (storeId === expectedStoreId) {
     return <Navigate to={suffix} replace />
+  }
+  if (storeId && isKnownStoreId(storeId)) {
+    return <StoreScope />
   }
   return <Navigate to="/" replace />
 }
@@ -116,7 +124,7 @@ function CustomDomainApp({ storeId }: { storeId: string }) {
           <Route
             path="s/:storeId/*"
             element={
-              <CustomDomainStorePrefixRedirect expectedStoreId={storeId} />
+              <CustomDomainStorePrefixRoute expectedStoreId={storeId} />
             }
           />
 
