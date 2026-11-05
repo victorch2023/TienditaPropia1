@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string
   readonly VITE_FIREBASE_APP_ID: string
   readonly VITE_CULQI_PUBLIC_KEY: string
+  /** Solo publishable (pk_test_… / pk_live_…). Secrets van en Functions. */
+  readonly VITE_STRIPE_PUBLISHABLE_KEY: string
   readonly VITE_FUNCTIONS_URL: string
   readonly VITE_DEMO_MODE?: string
 }

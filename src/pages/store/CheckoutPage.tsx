@@ -12,6 +12,10 @@ import { getShippingCost } from '../../services/store'
 import { chargeWithCulqi, initCulqiCheckout } from '../../services/culqi'
 import { CULQI_PUBLIC_KEY } from '../../services/firebase'
 import {
+  createStripePayment,
+  hasStripePublishableKey,
+} from '../../services/stripe'
+import {
   CITROLEAF_DISABLE_BANK_TRANSFER,
   CITROLEAF_HIDE_IGV_LINE,
   CITROLEAF_SKIP_FISCAL_RECEIPT,
@@ -20,10 +24,16 @@ import {
 import { validateDNI, validateRUC } from '../../utils/fiscal'
 import { formatSoles, calculateTotal } from '../../utils/money'
 import {
+  estimateStripeCardFee,
+  isStripeCheckoutAvailable,
+} from '../../utils/stripeFees'
+import {
   RECEIPT_ACCEPT,
   uploadPaymentReceipt,
 } from '../../services/storage'
 import type { FiscalData, ManualPaymentMethod, OrderItem, ShippingAddress } from '../../types'
+
+type CheckoutPaymentChannel = 'manual' | 'stripe'
 
 const JA_INSTAGRAM_MENTION_URL =
   'https://www.instagram.com/p/DcuN9oOmBL1/?stkn=MXhjbmZtcDFlanN1YQ=='
@@ -73,6 +83,8 @@ export function CheckoutPage() {
   const [razonSocial, setRazonSocial] = useState('')
   const [direccionFiscal, setDireccionFiscal] = useState('')
 
+  const [paymentChannel, setPaymentChannel] =
+    useState<CheckoutPaymentChannel>('manual')
   const [manualMethod, setManualMethod] = useState<ManualPaymentMethod>('yape')
   const [paymentReference, setPaymentReference] = useState('')
   const [proofFile, setProofFile] = useState<File | null>(null)
@@ -100,11 +112,23 @@ export function CheckoutPage() {
     : config.shippingDefault
   const totals = calculateTotal(subtotal, shippingCost, config.igvRate)
   const payments = config.payments
+  const stripeAvailable = isStripeCheckoutAvailable(payments, {
+    demoAllowWithoutAccount: true,
+  })
+  const stripeFee = estimateStripeCardFee(totals.total, payments)
+  const displayTotal =
+    paymentChannel === 'stripe' ? stripeFee.chargeTotalCents : totals.total
   const paymentInstructionsText = payments.paymentInstructions
     ? disableBankTransfer
       ? stripTransferenciaFromInstructions(payments.paymentInstructions)
       : payments.paymentInstructions
     : undefined
+
+  useEffect(() => {
+    if (!stripeAvailable && paymentChannel === 'stripe') {
+      setPaymentChannel('manual')
+    }
+  }, [stripeAvailable, paymentChannel])
 
   if (items.length === 0 && step < 3) {
     navigate(path('carrito'))
@@ -239,6 +263,80 @@ export function CheckoutPage() {
       setError(e instanceof Error ? e.message : 'Error al registrar pedido')
       setProcessing(false)
       setUploadPercent(null)
+    }
+  }
+
+  const handleStripePayment = async () => {
+    setProcessing(true)
+    setError('')
+    try {
+      // Validación UI completa: sin publishable key → mensaje de preparación (no crea pedido).
+      if (!hasStripePublishableKey()) {
+        setError(
+          'Modo preparación: las pruebas con Stripe vienen después. Configura VITE_STRIPE_PUBLISHABLE_KEY (pk_test_…) cuando estemos listos.'
+        )
+        setProcessing(false)
+        return
+      }
+
+      const feeEstimate = estimateStripeCardFee(totals.total, payments)
+      const chargeTotal = feeEstimate.chargeTotalCents
+      const applicationFeeCents =
+        feeEstimate.platformFeePercent > 0
+          ? Math.round((totals.total * feeEstimate.platformFeePercent) / 100)
+          : 0
+
+      const orderId = await createOrder({
+        storeId,
+        userId: user?.uid,
+        items: buildOrderItems(),
+        subtotal: totals.subtotal,
+        igv: totals.igv,
+        total: chargeTotal,
+        shipping: totals.shipping,
+        status: 'pendiente_pago',
+        payment: {
+          method: 'stripe',
+          stripeFeeCents:
+            feeEstimate.policy === 'pass_to_customer'
+              ? feeEstimate.estimatedFeeCents
+              : 0,
+          submittedAt: Date.now(),
+        },
+        fiscal: buildFiscal(),
+        shippingAddress: shipping,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      })
+
+      const result = await createStripePayment({
+        storeId,
+        orderId,
+        amountCents: chargeTotal,
+        email: shipping.email,
+        stripeAccountId: payments.stripeAccountId,
+        applicationFeeCents: applicationFeeCents || undefined,
+      })
+
+      if (!result.success) {
+        setError(
+          result.error ||
+            'Modo preparación: las pruebas con Stripe vienen después.'
+        )
+        setProcessing(false)
+        return
+      }
+
+      // Fase actual: PaymentIntent creado si hay secrets; Elements/confirmación en fase siguiente.
+      setError(
+        result.clientSecret
+          ? `PaymentIntent creado (${result.paymentIntentId}). Confirmación con Stripe Elements llega en la fase de pruebas.`
+          : 'Modo preparación: las pruebas con Stripe vienen después.'
+      )
+      setProcessing(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al iniciar pago Stripe')
+      setProcessing(false)
     }
   }
 
@@ -533,11 +631,25 @@ export function CheckoutPage() {
               <dt>Envío ({shipping.distrito})</dt>
               <dd>{formatSoles(totals.shipping)}</dd>
             </div>
+            {paymentChannel === 'stripe' &&
+              stripeFee.policy === 'pass_to_customer' && (
+                <div className="flex justify-between text-gray-600">
+                  <dt>Comisión estimada por tarjeta</dt>
+                  <dd>{formatSoles(stripeFee.estimatedFeeCents)}</dd>
+                </div>
+              )}
             <div className="flex justify-between border-t pt-2 text-lg font-bold">
               <dt>Total</dt>
-              <dd className="text-brand-600">{formatSoles(totals.total)}</dd>
+              <dd className="text-brand-600">{formatSoles(displayTotal)}</dd>
             </div>
           </dl>
+          {paymentChannel === 'stripe' && (
+            <p className="text-xs text-gray-500">
+              {stripeFee.policy === 'absorb'
+                ? 'Sin cargo extra por tarjeta; la comisión la asume el comercio.'
+                : 'Comisiones estimadas; Stripe confirma el cargo final al pagar.'}
+            </p>
+          )}
           <p className="text-sm text-gray-500">
             {skipFiscalReceipt
               ? 'Constancia de pago por email (sin comprobante fiscal)'
@@ -555,83 +667,154 @@ export function CheckoutPage() {
                 <label key={m} className="flex items-center gap-2 text-sm">
                   <input
                     type="radio"
-                    checked={manualMethod === m}
-                    onChange={() => setManualMethod(m)}
+                    name="checkout-payment"
+                    checked={
+                      paymentChannel === 'manual' && manualMethod === m
+                    }
+                    onChange={() => {
+                      setPaymentChannel('manual')
+                      setManualMethod(m)
+                    }}
                   />
                   {MANUAL_METHOD_LABELS[m]}
                 </label>
               ))}
+              {stripeAvailable && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="checkout-payment"
+                    checked={paymentChannel === 'stripe'}
+                    onChange={() => setPaymentChannel('stripe')}
+                  />
+                  Tarjeta (Stripe)
+                </label>
+              )}
             </div>
           </div>
 
-          <div className="rounded-lg border border-brand-100 bg-brand-50 p-4">
-            <h3 className="mb-2 text-sm font-medium text-brand-900">Instrucciones de pago</h3>
-            {paymentInstructionsText && (
-              <p className="mb-2 text-sm text-brand-800">{paymentInstructionsText}</p>
-            )}
-            {renderPaymentInstructions()}
-            <p className="mt-2 text-sm font-medium text-brand-900">
-              Monto a pagar: {formatSoles(totals.total)}
-            </p>
-          </div>
+          {paymentChannel === 'manual' ? (
+            <>
+              <div className="rounded-lg border border-brand-100 bg-brand-50 p-4">
+                <h3 className="mb-2 text-sm font-medium text-brand-900">
+                  Instrucciones de pago
+                </h3>
+                {paymentInstructionsText && (
+                  <p className="mb-2 text-sm text-brand-800">
+                    {paymentInstructionsText}
+                  </p>
+                )}
+                {renderPaymentInstructions()}
+                <p className="mt-2 text-sm font-medium text-brand-900">
+                  Monto a pagar: {formatSoles(totals.total)}
+                </p>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Número de operación / referencia (obligatorio)
-            </label>
-            <input
-              value={paymentReference}
-              onChange={(e) => setPaymentReference(e.target.value)}
-              placeholder="Ej. 00123456"
-              required
-              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Número de operación / referencia (obligatorio)
+                </label>
+                <input
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="Ej. 00123456"
+                  required
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Comprobante de pago (obligatorio)
-            </label>
-            <p className="mt-0.5 text-xs text-gray-500">
-              Sube una captura o PDF del pago (máx. 10 MB).
-            </p>
-            <input
-              type="file"
-              accept={RECEIPT_ACCEPT}
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null
-                setProofFile(file)
-              }}
-              className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-brand-700"
-            />
-            {proofFile && (
-              <p className="mt-1 text-xs text-gray-600">
-                Archivo: {proofFile.name}
-              </p>
-            )}
-            {uploadPercent != null && processing && (
-              <p className="mt-1 text-xs text-brand-700">
-                Subiendo comprobante… {uploadPercent}%
-              </p>
-            )}
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Comprobante de pago (obligatorio)
+                </label>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Sube una captura o PDF del pago (máx. 10 MB).
+                </p>
+                <input
+                  type="file"
+                  accept={RECEIPT_ACCEPT}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    setProofFile(file)
+                  }}
+                  className="mt-1 block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-brand-700"
+                />
+                {proofFile && (
+                  <p className="mt-1 text-xs text-gray-600">
+                    Archivo: {proofFile.name}
+                  </p>
+                )}
+                {uploadPercent != null && processing && (
+                  <p className="mt-1 text-xs text-brand-700">
+                    Subiendo comprobante… {uploadPercent}%
+                  </p>
+                )}
+              </div>
 
-          <div className="flex gap-3">
-            <button onClick={() => setStep(2)} className="flex-1 rounded-lg border py-3">
-              Atrás
-            </button>
-            <button
-              onClick={handleManualPayment}
-              disabled={processing}
-              className="flex-1 rounded-lg bg-brand-600 py-3 text-white disabled:opacity-50"
-            >
-              {processing ? 'Registrando...' : 'Registrar pedido'}
-            </button>
-          </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep(2)}
+                  className="flex-1 rounded-lg border py-3"
+                >
+                  Atrás
+                </button>
+                <button
+                  onClick={handleManualPayment}
+                  disabled={processing}
+                  className="flex-1 rounded-lg bg-brand-600 py-3 text-white disabled:opacity-50"
+                >
+                  {processing ? 'Registrando...' : 'Registrar pedido'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="rounded-lg border border-brand-100 bg-brand-50 p-4 space-y-2 text-sm">
+                <h3 className="font-medium text-brand-900">Pago con tarjeta</h3>
+                <div className="flex justify-between text-brand-900">
+                  <span>Subtotal + envío</span>
+                  <span>{formatSoles(stripeFee.baseTotalCents)}</span>
+                </div>
+                {stripeFee.policy === 'pass_to_customer' ? (
+                  <div className="flex justify-between text-brand-800">
+                    <span>Comisión estimada por tarjeta</span>
+                    <span>{formatSoles(stripeFee.estimatedFeeCents)}</span>
+                  </div>
+                ) : (
+                  <p className="text-brand-800">
+                    Sin cargo extra por tarjeta; la comisión la asume el comercio.
+                  </p>
+                )}
+                <div className="flex justify-between border-t border-brand-100 pt-2 font-semibold text-brand-900">
+                  <span>Total</span>
+                  <span>{formatSoles(stripeFee.chargeTotalCents)}</span>
+                </div>
+                <p className="text-xs text-brand-700">
+                  Comisiones estimadas; Stripe confirma el cargo final.
+                </p>
+              </div>
 
-          {payments.culqiEnabled && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep(2)}
+                  className="flex-1 rounded-lg border py-3"
+                >
+                  Atrás
+                </button>
+                <button
+                  onClick={handleStripePayment}
+                  disabled={processing}
+                  className="flex-1 rounded-lg bg-brand-600 py-3 text-white disabled:opacity-50"
+                >
+                  {processing ? 'Procesando...' : 'Pagar con tarjeta'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {payments.culqiEnabled && paymentChannel === 'manual' && (
             <div className="border-t pt-4 text-center">
-              <p className="mb-2 text-xs text-gray-500">O paga con tarjeta</p>
+              <p className="mb-2 text-xs text-gray-500">O paga con tarjeta (Culqi)</p>
               <button
                 onClick={handleCulqiPayment}
                 disabled={processing}

@@ -16,8 +16,12 @@ import {
   CITROLEAF_DISABLE_BANK_TRANSFER,
   CITROLEAF_STORE_ID,
 } from '../../config/stores'
-import type { StoreConfig } from '../../types'
-import { DEFAULT_STORE_CONFIG } from '../../types'
+import {
+  hasStripePublishableKey,
+  isStripeTestPublishableKey,
+} from '../../services/stripe'
+import type { CardFeePolicy, StoreConfig, StripeMode } from '../../types'
+import { DEFAULT_PAYMENTS_CONFIG, DEFAULT_STORE_CONFIG } from '../../types'
 
 function emptyToUndefined(value: string | undefined): string | undefined {
   const trimmed = value?.trim()
@@ -55,6 +59,25 @@ function normalizeConfigForSave(config: StoreConfig): StoreConfig {
       bankAccount: emptyToUndefined(config.payments.bankAccount),
       bankCCI: emptyToUndefined(config.payments.bankCCI),
       paymentInstructions: emptyToUndefined(config.payments.paymentInstructions),
+      stripeEnabled: config.payments.stripeEnabled ?? false,
+      stripeAccountId: emptyToUndefined(config.payments.stripeAccountId),
+      stripeMode: config.payments.stripeMode === 'live' ? 'live' : 'test',
+      cardFeePolicy:
+        config.payments.cardFeePolicy === 'pass_to_customer'
+          ? 'pass_to_customer'
+          : 'absorb',
+      stripeFeePercent:
+        typeof config.payments.stripeFeePercent === 'number'
+          ? config.payments.stripeFeePercent
+          : DEFAULT_PAYMENTS_CONFIG.stripeFeePercent,
+      stripeFeeFixedCents:
+        typeof config.payments.stripeFeeFixedCents === 'number'
+          ? config.payments.stripeFeeFixedCents
+          : DEFAULT_PAYMENTS_CONFIG.stripeFeeFixedCents,
+      platformFeePercent:
+        typeof config.payments.platformFeePercent === 'number'
+          ? config.payments.platformFeePercent
+          : DEFAULT_PAYMENTS_CONFIG.platformFeePercent,
     },
   }
 }
@@ -71,10 +94,16 @@ export function AdminConfigPage() {
   const [savedConfigJson, setSavedConfigJson] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [driveHelpOpen, setDriveHelpOpen] = useState(false)
+  const [stripeConnectMsg, setStripeConnectMsg] = useState<string | null>(null)
+  const [testAccountDraft, setTestAccountDraft] = useState('')
 
   useEffect(() => {
     getStoreConfig(storeId)
-      .then(setConfig)
+      .then((cfg) => {
+        setConfig(cfg)
+        setTestAccountDraft(cfg.payments.stripeAccountId || '')
+        setStripeConnectMsg(null)
+      })
       .finally(() => setLoading(false))
   }, [storeId])
 
@@ -113,11 +142,41 @@ export function AdminConfigPage() {
     setConfig({ ...config, shippingByDistrito: next })
   }
 
-  const updatePayments = (field: keyof StoreConfig['payments'], value: string | boolean) => {
+  const updatePayments = (
+    field: keyof StoreConfig['payments'],
+    value: string | boolean | number
+  ) => {
     setConfig({
       ...config,
       payments: { ...config.payments, [field]: value },
     })
+    setSavedConfigJson(null)
+  }
+
+  const stripeConnected = Boolean(config.payments.stripeAccountId?.trim())
+  const publishableReady = hasStripePublishableKey()
+
+  const handleConnectStripe = () => {
+    setStripeConnectMsg(null)
+    if (!publishableReady) {
+      setStripeConnectMsg(
+        'Pendiente de claves de prueba: configura VITE_STRIPE_PUBLISHABLE_KEY (pk_test_…) en .env y redespliega. Las pruebas reales con Stripe vienen después.'
+      )
+      return
+    }
+    const accountId =
+      testAccountDraft.trim() || config.payments.stripeAccountId?.trim() || ''
+    if (!accountId) {
+      setStripeConnectMsg(
+        'Para desarrollo UI, pega un Account ID de prueba (acct_…) abajo y pulsa de nuevo, o guarda la config con el ID. Onboarding Connect real se activa en la fase de pruebas.'
+      )
+      return
+    }
+    updatePayments('stripeAccountId', accountId)
+    setTestAccountDraft('')
+    setStripeConnectMsg(
+      `Account ID de prueba guardado en el formulario (${accountId}). Pulsa «Guardar configuración» para persistirlo. Conexión live / onboarding: después.`
+    )
   }
 
   if (loading) return <LoadingSpinner />
@@ -551,16 +610,232 @@ export function AdminConfigPage() {
         </div>
 
         <div className="border-t pt-4">
+          <h2 className="mb-1 font-semibold text-gray-900">
+            Pago con tarjeta (Stripe)
+          </h2>
+          <p className="mb-3 text-xs text-gray-500">
+            Estructura y formularios listos. Modo test por defecto. Las pruebas reales con
+            Stripe y el modo live se activan después — no guardes secret keys aquí.
+          </p>
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                stripeConnected
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {stripeConnected ? 'Conectado (Account ID)' : 'No conectado'}
+            </span>
+            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-700">
+              Modo: {config.payments.stripeMode === 'live' ? 'live' : 'test'}
+            </span>
+            {!publishableReady && (
+              <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">
+                Sin pk_test en .env
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(config.payments.stripeEnabled)}
+                onChange={(e) => updatePayments('stripeEnabled', e.target.checked)}
+              />
+              Activar pago con tarjeta (Stripe) en el checkout
+            </label>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Política de comisión de tarjeta
+              </label>
+              <select
+                value={
+                  (config.payments.cardFeePolicy as CardFeePolicy) || 'absorb'
+                }
+                onChange={(e) =>
+                  updatePayments('cardFeePolicy', e.target.value as CardFeePolicy)
+                }
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+              >
+                <option value="absorb">La tienda asume la comisión</option>
+                <option value="pass_to_customer">
+                  El cliente paga la comisión estimada
+                </option>
+              </select>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  % estimado Stripe
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={
+                    config.payments.stripeFeePercent ??
+                    DEFAULT_PAYMENTS_CONFIG.stripeFeePercent
+                  }
+                  onChange={(e) =>
+                    updatePayments(
+                      'stripeFeePercent',
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Fijo estimado (S/)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={centavosToSoles(
+                    config.payments.stripeFeeFixedCents ??
+                      DEFAULT_PAYMENTS_CONFIG.stripeFeeFixedCents ??
+                      100
+                  )}
+                  onChange={(e) =>
+                    updatePayments(
+                      'stripeFeeFixedCents',
+                      solesToCentavos(parseFloat(e.target.value) || 0)
+                    )
+                  }
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  % plataforma (opcional)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={config.payments.platformFeePercent ?? 0}
+                  onChange={(e) =>
+                    updatePayments(
+                      'platformFeePercent',
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              Los % y el fijo son <strong>estimados</strong> para mostrar el desglose al
+              cliente. El cargo final lo confirma Stripe al procesar el pago.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Modo Stripe
+              </label>
+              <select
+                value={(config.payments.stripeMode as StripeMode) || 'test'}
+                onChange={(e) => {
+                  const mode = e.target.value as StripeMode
+                  if (mode === 'live') {
+                    const ok = window.confirm(
+                      'Modo live solo cuando estemos listos. ¿Activarlo de todas formas? (recomendado: dejar en test)'
+                    )
+                    if (!ok) return
+                  }
+                  updatePayments('stripeMode', mode)
+                }}
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+              >
+                <option value="test">Test (recomendado)</option>
+                <option value="live">Live — solo cuando estemos listos</option>
+              </select>
+              {config.payments.stripeMode === 'live' && (
+                <p className="mt-1 text-xs text-red-700">
+                  Advertencia: live deshabilitado en flujo real hasta la fase final. Usa
+                  keys test (pk_test_ / sk_test_) hasta nuevo aviso.
+                </p>
+              )}
+              {publishableReady && !isStripeTestPublishableKey() && (
+                <p className="mt-1 text-xs text-red-700">
+                  VITE_STRIPE_PUBLISHABLE_KEY no parece de test (pk_test_…).
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Account ID de prueba (opcional, desarrollo UI)
+              </label>
+              <input
+                value={testAccountDraft}
+                onChange={(e) => setTestAccountDraft(e.target.value)}
+                placeholder="acct_…"
+                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-mono"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Stub de Connect: guarda un ID manual para probar la UI. No es onboarding
+                real de Stripe.
+              </p>
+              {config.payments.stripeAccountId && (
+                <p className="mt-1 text-xs text-gray-600">
+                  Guardado actualmente:{' '}
+                  <span className="font-mono">{config.payments.stripeAccountId}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleConnectStripe}
+                className="rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+              >
+                Conectar Stripe
+              </button>
+              {stripeConnected && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    updatePayments('stripeAccountId', '')
+                    setTestAccountDraft('')
+                    setStripeConnectMsg('Account ID quitado del formulario. Guarda para persistir.')
+                  }}
+                  className="rounded-lg border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  Desconectar
+                </button>
+              )}
+            </div>
+            {stripeConnectMsg && (
+              <p
+                role="status"
+                className="text-sm text-gray-700 rounded-lg border bg-gray-50 px-3 py-2"
+              >
+                {stripeConnectMsg}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={config.payments.culqiEnabled}
               onChange={(e) => updatePayments('culqiEnabled', e.target.checked)}
             />
-            Activar pasarela externa (Culqi) — futuro
+            Activar pasarela externa (Culqi) — legado / futuro
           </label>
           <p className="mt-1 text-xs text-gray-500">
-            Desactivado por defecto. Habilita cuando configures las llaves Culqi y Cloud Functions.
+            Desactivado por defecto. No rompe Yape/Plin. Preferir Stripe para tarjeta.
           </p>
         </div>
 

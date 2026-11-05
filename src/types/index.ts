@@ -95,8 +95,13 @@ export interface FiscalData {
 
 export type ManualPaymentMethod = 'yape' | 'plin' | 'transferencia'
 
+export type StripeMode = 'test' | 'live'
+
+/** Quién asume la comisión estimada de tarjeta (Stripe). */
+export type CardFeePolicy = 'absorb' | 'pass_to_customer'
+
 export interface OrderPayment {
-  method: 'manual' | 'culqi'
+  method: 'manual' | 'culqi' | 'stripe'
   manualMethod?: ManualPaymentMethod
   paymentReference?: string
   /** Download URL del comprobante (Storage o URL legacy Drive). */
@@ -106,6 +111,10 @@ export interface OrderPayment {
   paymentProofFilename?: string
   submittedAt?: number
   culqiChargeId?: string
+  /** PaymentIntent / Charge id de Stripe (fase de integración). */
+  stripePaymentIntentId?: string
+  /** Comisión estimada cobrada al cliente (céntimos), si pass_to_customer. */
+  stripeFeeCents?: number
   paidAt?: number
 }
 
@@ -134,6 +143,23 @@ export interface StorePaymentsConfig {
   bankAccount?: string
   bankCCI?: string
   paymentInstructions?: string
+  /** Activar método Tarjeta (Stripe) en checkout. Default false. */
+  stripeEnabled?: boolean
+  /** Cuenta Connect del comercio (acct_…). No guardar secret keys aquí. */
+  stripeAccountId?: string
+  /** Modo Stripe. Default 'test'. Live solo cuando se active explícitamente. */
+  stripeMode?: StripeMode
+  /** Quién asume la comisión estimada de tarjeta. */
+  cardFeePolicy?: CardFeePolicy
+  /**
+   * % estimado de comisión Stripe (ej. 3.99). Solo informativo en UI;
+   * el cargo final lo confirma Stripe.
+   */
+  stripeFeePercent?: number
+  /** Cargo fijo estimado en céntimos (ej. 100 = S/ 1.00). */
+  stripeFeeFixedCents?: number
+  /** Comisión de plataforma opcional (%). Default 0. */
+  platformFeePercent?: number
 }
 
 export interface StoreConfig {
@@ -173,6 +199,13 @@ export const DEFAULT_PAYMENTS_CONFIG: StorePaymentsConfig = {
   bankCCI: '',
   paymentInstructions:
     'Realiza el pago y envía tu comprobante. Verificaremos tu pedido en breve.',
+  stripeEnabled: false,
+  stripeMode: 'test',
+  cardFeePolicy: 'absorb',
+  /** Estimado típico Perú/LatAm — editable en Admin; no es el cargo real de Stripe. */
+  stripeFeePercent: 3.99,
+  stripeFeeFixedCents: 100,
+  platformFeePercent: 0,
 }
 
 export const DEFAULT_STORE_CONFIG: StoreConfig = {

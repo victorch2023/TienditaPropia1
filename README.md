@@ -1,6 +1,6 @@
 # TienditaPropia — Multi-tienda (Perú)
 
-Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`), **Citroleaf** (`citroleaf`) y **Piyukis** (`piyukis`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; Culqi opcional. Envíos en **Lima Metropolitana**.
+Plataforma multi-tienda desplegada en **GitHub Pages** con backend **Firebase**. Incluye **La Tiendita Chévere** (`tiendita`), **Citroleaf** (`citroleaf`) y **Piyukis** (`piyukis`). Imágenes de producto en **Firebase Storage** (URLs en Firestore). Pagos Yape/Plin/transferencia; **Stripe** (tarjeta, modo preparación/test) y Culqi opcional. Envíos en **Lima Metropolitana**.
 
 **Dominio Citroleaf:** `https://www.citroleaf.com` → abre Citroleaf en `/` (sin prefijo `/s/citroleaf`). Rutas `/s/piyukis`, `/s/tiendita`, etc. siguen abriendo esa tienda en ese host.
 
@@ -90,8 +90,9 @@ firebase deploy --only firestore:rules,firestore:indexes
 | 7 | (Opcional) `GOOGLE_APPLICATION_CREDENTIALS=... npm run seed`, `seed:citroleaf`, `seed:piyukis` |
 | 8 | Registrarte en `/s/{storeId}/cuenta` y poner `role=admin` + `adminStores` |
 | 9 | Configurar Yape/Plin en `/s/{storeId}/admin/config` |
-| 10 | (Opcional futuro) Cuenta Culqi, desplegar functions, activar pasarela en admin |
-| 11 | Habilitar GitHub Pages (Actions) y agregar secrets `VITE_*` en el repo |
+| 10 | (Opcional) Stripe en modo test: ver sección «Stripe» abajo — **pruebas reales después** |
+| 11 | (Opcional legado) Cuenta Culqi, desplegar functions, activar pasarela en admin |
+| 12 | Habilitar GitHub Pages (Actions) y agregar secrets `VITE_*` en el repo |
 
 **Vista previa sin Firebase:** `npm run dev` → [http://localhost:5173/TienditaPropia1/](http://localhost:5173/TienditaPropia1/)
 
@@ -117,7 +118,7 @@ firebase deploy --only storage
 - **Panel admin:** dashboard, CRUD productos/categorías, configuración de tienda (datos de pago), gestión de pedidos y verificación de pagos
 - **Precios en céntimos** con IGV 18%
 - **Validación fiscal:** DNI (8 dígitos) y RUC (dígito verificador peruano)
-- **Cloud Functions:** `culqiCharge` (pagos con tarjeta, opcional) y `createInvoice` (stub Nubefact)
+- **Cloud Functions:** `createStripePayment` + `stripeWebhook` (stubs Stripe), `culqiCharge` (opcional) y `createInvoice` (stub Nubefact)
 
 ---
 
@@ -189,21 +190,45 @@ Si Firebase lo solicita, crea estos índices compuestos:
 3. Los clientes eligen método de pago en checkout, indican número de operación y pueden pegar un enlace al comprobante (Drive); el pedido queda en `pendiente_pago`
 4. En **Pedidos**, confirma el pago recibido para pasar a `pagado`
 
-### Pasarela Culqi (opcional — futuro)
+### Stripe — tarjeta (estructura lista; pruebas después)
+
+**Qué hay hoy (esta fase):** modelo Firestore en `stores/{storeId}.payments`, UI en Admin → Configuración («Pago con tarjeta (Stripe)»), método **Tarjeta (Stripe)** en checkout con desglose de comisión estimada, cliente `src/services/stripe.ts`, y Cloud Functions stub `createStripePayment` + `stripeWebhook`. **Yape/Plin/transferencia no se rompen.** `stripeEnabled: false` por defecto. Modo **test** por defecto; live solo cuando se active explícitamente al final.
+
+**Cómo activar por tienda (sin cuentas live):**
+
+1. Admin → Configuración → **Pago con tarjeta (Stripe)**
+2. Activa el switch, elige política de comisión (tienda asume vs cliente paga), ajusta %/fijo estimados
+3. Deja modo **test**. Opcional: pega un `acct_…` de prueba y «Conectar Stripe» (stub UI)
+4. Guarda. En checkout aparecerá **Tarjeta (Stripe)**
+
+**Qué falta para pruebas reales (fase siguiente):**
+
+- Keys **test**: `VITE_STRIPE_PUBLISHABLE_KEY=pk_test_…` en `.env` / GitHub secrets
+- Secrets Functions: `STRIPE_SECRET_KEY=sk_test_…`, `STRIPE_WEBHOOK_SECRET=whsec_…`
+- `cd functions && npm install && firebase deploy --only functions`
+- Connect onboarding real (no solo Account ID manual) + Stripe Elements / confirmación
+- Completar webhook (marcar `pagado`, stock)
+
+**Live (al final):** cambiar `stripeMode` a `live`, keys `pk_live_` / `sk_live_`, y Connect live. No exigir cuentas Stripe reales en esta fase.
+
+### Pasarela Culqi (opcional — legado)
 
 1. En admin, activa **"Activar pasarela externa (Culqi)"**
 2. Crea cuenta en [culqi.com](https://culqi.com) y obtén llaves de prueba
 3. Agrega a `.env`: `VITE_CULQI_PUBLIC_KEY=pk_test_...`
 4. Para pagos reales necesitas **Firebase Blaze** (plan de pago por uso)
 
-#### Desplegar Cloud Functions (solo si usas Culqi)
+#### Desplegar Cloud Functions (Stripe y/o Culqi)
 
 ```bash
 cd functions
 npm install
 cd ..
+# Stripe (test):
+firebase functions:secrets:set STRIPE_SECRET_KEY
+firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+# Culqi (opcional):
 firebase functions:secrets:set CULQI_SECRET_KEY
-# Ingresa tu sk_test_... o sk_live_...
 firebase deploy --only functions
 ```
 
@@ -235,8 +260,9 @@ Abre `http://localhost:5173/TienditaPropia1/`
    - `VITE_FIREBASE_STORAGE_BUCKET` → valor exacto: `tiendita-propia.firebasestorage.app`
    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
    - `VITE_FIREBASE_APP_ID`
+   - `VITE_STRIPE_PUBLISHABLE_KEY` (solo publishable `pk_test_…` hasta nuevo aviso)
    - `VITE_CULQI_PUBLIC_KEY` (solo si activas Culqi)
-   - `VITE_FUNCTIONS_URL` (solo si activas Culqi)
+   - `VITE_FUNCTIONS_URL` (si activas Stripe o Culqi functions)
 3. Push a `main` → el workflow `.github/workflows/deploy.yml` despliega automáticamente
 
 ### 5.1 Dominio custom Citroleaf (GoDaddy + GitHub Pages)
@@ -314,12 +340,14 @@ TienditaPropia1/
 │   ├── firestore.indexes.json
 │   └── storage.rules
 ├── functions/src/
+│   ├── createStripePayment.ts
+│   ├── stripeWebhook.ts
 │   ├── culqiCharge.ts
 │   └── createInvoice.ts
 ├── src/
 │   ├── pages/store/     # Tienda cliente
 │   ├── pages/admin/     # Panel dueño
-│   ├── services/        # Firebase, Culqi, pedidos
+│   ├── services/        # Firebase, Stripe, Culqi, pedidos
 │   ├── hooks/
 │   ├── types/
 │   ├── utils/           # dinero, fiscal, driveImageUrl
@@ -349,7 +377,8 @@ TienditaPropia1/
 | GitHub Pages | Gratis |
 | Firebase Spark (Auth, Firestore) | Gratis hasta cuota |
 | Firebase Blaze (Functions) | ~$0 para tienda pequeña |
-| Culqi | Comisión por transacción (solo si activas pasarela) |
+| Stripe | Comisión por transacción (estimado editable en Admin; cargo real lo confirma Stripe) |
+| Culqi | Comisión por transacción (solo si activas pasarela legado) |
 
 ---
 

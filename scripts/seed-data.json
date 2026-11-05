@@ -16,7 +16,13 @@
       "bankName": "BCP",
       "bankAccount": "191-12345678-0-12",
       "bankCCI": "00219100123456781234",
-      "paymentInstructions": "Realiza el pago por el monto exacto e indica tu número de pedido."
+      "paymentInstructions": "Realiza el pago por el monto exacto e indica tu número de pedido.",
+      "stripeEnabled": false,
+      "stripeMode": "test",
+      "cardFeePolicy": "absorb",
+      "stripeFeePercent": 3.99,
+      "stripeFeeFixedCents": 100,
+      "platformFeePercent": 0
     },
     "imageHostingNote": "Carpeta compartida «Shared Tiendita Images»: https://drive.google.com/drive/folders/1D3Vir25MPJVJTKe3Zq6vtBblN22x6tgh?usp=sharing — No uses el enlace de la carpeta en productos; pega el enlace de cada archivo (botón Drive → directo en admin)."
   },

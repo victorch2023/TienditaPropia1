@@ -35,6 +35,12 @@ export const PIYUKIS_STORE_CONFIG: StoreConfig = {
     bankCCI: '',
     paymentInstructions:
       'Realiza el pago por Yape o Plin el monto exacto e indica tu número de pedido en el mensaje.',
+    stripeEnabled: false,
+    stripeMode: 'test',
+    cardFeePolicy: 'absorb',
+    stripeFeePercent: 3.99,
+    stripeFeeFixedCents: 100,
+    platformFeePercent: 0,
   },
   imageHostingNote:
     'Usa URLs públicas o sube imágenes desde Admin → Productos (Firebase Storage).',
