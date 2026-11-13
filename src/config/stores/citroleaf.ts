@@ -91,7 +91,7 @@ export const CITROLEAF_STORE_CONFIG: StoreConfig = {
     platformFeePercent: 0,
   },
   imageHostingNote:
-    'Usa URLs públicas (Unsplash, Drive archivo compartido). No pegues el enlace de una carpeta Drive.',
+    'Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs se guardan en Firestore. URLs públicas externas solo como legado opcional.',
 }
 
 export const CITROLEAF_CATEGORIES: Category[] = [

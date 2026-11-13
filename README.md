@@ -158,9 +158,9 @@ firebase deploy --only firestore:rules,storage
 2. Pulsa **Elegir imágenes** (JPG, PNG, WebP, etc.; máx. 10 MB).
 3. La app sube el archivo a Storage (`stores/{storeId}/products/…` o `…/uploads/…`) y muestra vista previa + progreso.
 4. Al **Guardar**, las URLs de descarga quedan en Firestore (`images: string[]`).
-5. Opcional: «Pegar URL externa» si ya tienes un enlace público (Drive, imgbb, etc.).
+5. Opcional (legado): «Pegar URL externa» solo si ya tienes un enlace público; el flujo recomendado es subir desde el admin a Storage.
 
-**Comprobantes de pago:** el cliente puede indicar número de operación y, opcionalmente, pegar un enlace público con la captura del pago.
+**Comprobantes de pago:** el cliente indica número de operación y puede subir el comprobante a Firebase Storage (no Drive).
 
 ### Índices Firestore requeridos
 
@@ -187,7 +187,7 @@ Si Firebase lo solicita, crea estos índices compuestos:
 
 1. Accede al panel admin → **Configuración**
 2. Completa números de **Yape**, **Plin** y datos de **transferencia bancaria** (banco, cuenta, CCI)
-3. Los clientes eligen método de pago en checkout, indican número de operación y pueden pegar un enlace al comprobante (Drive); el pedido queda en `pendiente_pago`
+3. Los clientes eligen método de pago en checkout, indican número de operación y pueden subir el comprobante a Firebase Storage; el pedido queda en `pendiente_pago`
 4. En **Pedidos**, confirma el pago recibido para pasar a `pagado`
 
 ### Stripe — tarjeta (estructura lista; pruebas después)
@@ -350,7 +350,7 @@ TienditaPropia1/
 │   ├── services/        # Firebase, Stripe, Culqi, pedidos
 │   ├── hooks/
 │   ├── types/
-│   ├── utils/           # dinero, fiscal, driveImageUrl
+│   ├── utils/           # dinero, fiscal, driveImageUrl (legado Drive)
 │   └── data/lima-distritos.ts
 └── .env.example
 ```

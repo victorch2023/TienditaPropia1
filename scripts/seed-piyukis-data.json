@@ -28,7 +28,7 @@
       "stripeFeeFixedCents": 100,
       "platformFeePercent": 0
     },
-    "imageHostingNote": "Usa URLs públicas o sube imágenes desde Admin → Productos (Firebase Storage)."
+    "imageHostingNote": "Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs se guardan en Firestore. No uses Google Drive para imágenes nuevas."
   },
   "categories": [],
   "products": []

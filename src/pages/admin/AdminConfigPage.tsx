@@ -4,10 +4,6 @@ import { getStoreConfig, updateStoreConfig } from '../../services/store'
 import { LIMA_DISTRITOS } from '../../data/lima-distritos'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { centavosToSoles, solesToCentavos } from '../../utils/money'
-import {
-  DEFAULT_DRIVE_IMAGES_FOLDER_URL,
-  resolveDriveImagesFolderUrl,
-} from '../../constants/drive'
 import { DriveImage } from '../../components/DriveImage'
 import { toDirectImageUrl } from '../../utils/driveImageUrl'
 import { getStoreThemeStyle } from '../../utils/theme'
@@ -93,7 +89,7 @@ export function AdminConfigPage() {
   const [saving, setSaving] = useState(false)
   const [savedConfigJson, setSavedConfigJson] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [driveHelpOpen, setDriveHelpOpen] = useState(false)
+  const [storageHelpOpen, setStorageHelpOpen] = useState(false)
   const [stripeConnectMsg, setStripeConnectMsg] = useState<string | null>(null)
   const [testAccountDraft, setTestAccountDraft] = useState('')
 
@@ -181,8 +177,6 @@ export function AdminConfigPage() {
 
   if (loading) return <LoadingSpinner />
 
-  const driveFolderUrl = resolveDriveImagesFolderUrl(config.imageHostingNote)
-
   return (
     <div className="max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold text-gray-900">Configuración de tienda</h1>
@@ -219,23 +213,31 @@ export function AdminConfigPage() {
       )}
 
       <details
-        open={driveHelpOpen}
-        onToggle={(e) => setDriveHelpOpen((e.target as HTMLDetailsElement).open)}
+        open={storageHelpOpen}
+        onToggle={(e) => setStorageHelpOpen((e.target as HTMLDetailsElement).open)}
         className="mb-6 rounded-xl border border-brand-100 bg-brand-50 p-4"
       >
         <summary className="cursor-pointer font-medium text-brand-900">
-          Cómo usar Google Drive para imágenes
+          Cómo subir imágenes (Firebase Storage)
         </summary>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-brand-800">
-          <li>Crea una carpeta en Google Drive (ej. &quot;Mi Tiendita - Imágenes&quot;).</li>
-          <li>Clic derecho en la carpeta → Compartir → &quot;Cualquier persona con el enlace&quot; → Lector.</li>
-          <li>Sube tus fotos de productos a esa carpeta.</li>
-          <li>Abre cada imagen → Compartir → copia el enlace.</li>
           <li>
-            En Productos, pega el enlace y usa el botón &quot;Drive → directo&quot; si hace falta.
+            En Admin → <strong>Productos</strong> → Nuevo / Editar, pulsa{' '}
+            <strong>Elegir imágenes</strong>.
           </li>
           <li>
-            No necesitas Firebase Storage ni plan Blaze: las URLs se guardan en Firestore.
+            Los archivos se suben a <strong>Firebase Storage</strong> (
+            <code className="rounded bg-brand-100 px-1">stores/{'{storeId}'}/…</code>
+            ).
+          </li>
+          <li>
+            Al <strong>Guardar</strong>, la URL de descarga se guarda en el producto en{' '}
+            <strong>Firestore</strong> (<code className="rounded bg-brand-100 px-1">images</code>
+            ). Storage = archivos; Firestore = metadatos/URLs.
+          </li>
+          <li>
+            No uses Google Drive para imágenes nuevas. Las URLs antiguas de Drive u otros hosts
+            siguen mostrándose en el catálogo (legado).
           </li>
         </ol>
       </details>
@@ -263,11 +265,12 @@ export function AdminConfigPage() {
           <input
             value={config.logoUrl || ''}
             onChange={(e) => setConfig({ ...config, logoUrl: e.target.value })}
-            placeholder="https://drive.google.com/file/d/..."
+            placeholder="https://… (Firebase Storage u otra URL pública)"
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-gray-500">
-            Recomendado: 200×200 px, cuadrado, PNG con fondo transparente, máx. 500 KB.
+            Recomendado: 200×200 px, cuadrado, PNG con fondo transparente, máx. 500 KB. Preferible
+            URL de Firebase Storage.
           </p>
           {config.logoUrl?.trim() && (
             <div className="mt-2 flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
@@ -281,12 +284,12 @@ export function AdminConfigPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Banner de inicio (URL en Drive)
+                Banner de inicio (URL de imagen)
               </label>
               <input
                 value={config.heroBannerUrl || ''}
                 onChange={(e) => setConfig({ ...config, heroBannerUrl: e.target.value })}
-                placeholder="https://drive.google.com/file/d/..."
+                placeholder="https://… (Firebase Storage u otra URL pública)"
                 className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -310,7 +313,7 @@ export function AdminConfigPage() {
               <input
                 value={config.backgroundImageUrl || ''}
                 onChange={(e) => setConfig({ ...config, backgroundImageUrl: e.target.value })}
-                placeholder="https://drive.google.com/file/d/..."
+                placeholder="https://… (Firebase Storage u otra URL pública)"
                 className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -445,26 +448,15 @@ export function AdminConfigPage() {
           <textarea
             value={config.imageHostingNote || ''}
             onChange={(e) => setConfig({ ...config, imageHostingNote: e.target.value })}
-            placeholder={`Ej. Carpeta Drive: ${DEFAULT_DRIVE_IMAGES_FOLDER_URL}`}
+            placeholder="Ej. Sube desde Admin → Productos (Firebase Storage). Las URLs quedan en Firestore."
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
             rows={2}
           />
           <p className="mt-1 text-xs text-gray-500">
-            Incluye el enlace a tu carpeta de imágenes en Drive; se usa en el formulario de productos.
-            No se muestra en la tienda pública.
+            Recordatorio interno para quien administra la tienda. Flujo correcto: subir a Firebase
+            Storage desde el admin; la URL se guarda en Firestore. No se muestra en la tienda
+            pública. Google Drive ya no es el método recomendado.
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-gray-600 truncate max-w-full" title={driveFolderUrl}>
-              Carpeta: {driveFolderUrl}
-            </span>
-            <button
-              type="button"
-              onClick={() => window.open(driveFolderUrl, '_blank', 'noopener,noreferrer')}
-              className="shrink-0 rounded-lg border border-brand-200 bg-white px-3 py-1 text-xs text-brand-700 hover:bg-brand-50"
-            >
-              Abrir carpeta en Drive
-            </button>
-          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>

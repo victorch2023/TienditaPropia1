@@ -169,7 +169,7 @@ export interface StoreConfig {
   /** Si la tienda aparece en el selector */
   active?: boolean
   logoUrl?: string
-  /** Banner principal de la página de inicio (URL de imagen en Drive) */
+  /** Banner principal de la página de inicio (URL de imagen; preferible Firebase Storage) */
   heroBannerUrl?: string
   /** Imagen de fondo sutil para toda la tienda */
   backgroundImageUrl?: string
@@ -186,7 +186,7 @@ export interface StoreConfig {
   shippingByDistrito: Record<string, number>
   payments: StorePaymentsConfig
   description?: string
-  /** Nota interna para el admin sobre hospedaje de imágenes (p. ej. carpeta Drive) */
+  /** Nota interna admin: subir a Firebase Storage; URL en Firestore (no Drive) */
   imageHostingNote?: string
 }
 

@@ -41,7 +41,7 @@ export const TIENDITA_STORE_CONFIG: StoreConfig = {
     platformFeePercent: 0,
   },
   imageHostingNote:
-    'Carpeta compartida «Shared Tiendita Images»: https://drive.google.com/drive/folders/1D3Vir25MPJVJTKe3Zq6vtBblN22x6tgh?usp=sharing — No uses el enlace de la carpeta en productos; pega el enlace de cada archivo (botón Drive → directo en admin).',
+    'Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs de descarga se guardan en el producto en Firestore. No uses Google Drive para imágenes nuevas.',
 }
 
 export const TIENDITA_CATEGORIES: Category[] = [

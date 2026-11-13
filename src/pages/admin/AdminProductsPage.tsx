@@ -169,7 +169,7 @@ export function AdminProductsPage() {
     if (!trimmed) return
     if (isGoogleDriveFolderUrl(trimmed)) {
       setUploadError(
-        'Ese enlace es de una carpeta de Drive, no de un archivo. Usa un enlace de imagen o súbela con el botón de arriba.'
+        'Ese enlace es de una carpeta de Google Drive (no sirve). Sube la imagen con «Elegir imágenes» (Firebase Storage) o pega la URL de un archivo de imagen.'
       )
       return
     }
@@ -316,7 +316,7 @@ export function AdminProductsPage() {
               {showManualUrl && (
                 <div className="flex gap-2">
                   <input
-                    placeholder="https://… (Drive, imgbb, etc.)"
+                    placeholder="https://… (legado: URL pública externa)"
                     value={manualUrl}
                     onChange={(e) => setManualUrl(e.target.value)}
                     className="flex-1 rounded-lg border px-3 py-2 text-sm"
@@ -361,8 +361,8 @@ export function AdminProductsPage() {
                         )}
                         {isGoogleDriveFolderUrl(url) && (
                           <p className="mt-1 text-red-600">
-                            Enlace de carpeta de Drive (no sirve como imagen). Quítalo y sube el
-                            archivo o pega un enlace de archivo.
+                            Enlace de carpeta de Drive (no sirve). Quítalo y súbelo con «Elegir
+                            imágenes» (Firebase Storage).
                           </p>
                         )}
                       </div>

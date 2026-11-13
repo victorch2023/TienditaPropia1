@@ -106,45 +106,27 @@ export function AdminCategoriesPage() {
               <label className="mb-1 block text-xs font-medium text-gray-600">
                 Imagen miniatura (opcional)
               </label>
-              <div className="flex gap-2">
-                <input
-                  placeholder="URL de imagen (Google Drive)"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                />
-                {imageUrl.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setImageUrl(toDirectImageUrl(imageUrl))}
-                    className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                  >
-                    Drive → directo
-                  </button>
-                )}
-              </div>
+              <input
+                placeholder="URL pública (preferible Firebase Storage)"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Pega la URL de descarga de Storage u otra URL pública. URLs antiguas de Drive
+                siguen funcionando (legado).
+              </p>
             </div>
             <div className="col-span-2">
               <label className="mb-1 block text-xs font-medium text-gray-600">
                 Banner de categoría (cabecera en catálogo)
               </label>
-              <div className="flex gap-2">
-                <input
-                  placeholder="URL del banner en Google Drive"
-                  value={bannerUrl}
-                  onChange={(e) => setBannerUrl(e.target.value)}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                />
-                {bannerUrl.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setBannerUrl(toDirectImageUrl(bannerUrl))}
-                    className="shrink-0 rounded-lg border px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                  >
-                    Drive → directo
-                  </button>
-                )}
-              </div>
+              <input
+                placeholder="URL pública (preferible Firebase Storage)"
+                value={bannerUrl}
+                onChange={(e) => setBannerUrl(e.target.value)}
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+              />
               <p className="mt-1 text-xs text-gray-500">
                 Recomendado: 800×200 px, máx. 1 MB, JPG/PNG/WebP. Se muestra al filtrar por esta
                 categoría en el catálogo.
