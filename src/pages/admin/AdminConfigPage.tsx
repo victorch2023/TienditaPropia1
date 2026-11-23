@@ -92,7 +92,6 @@ export function AdminConfigPage() {
   const [saving, setSaving] = useState(false)
   const [savedConfigJson, setSavedConfigJson] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [storageHelpOpen, setStorageHelpOpen] = useState(false)
   const [stripeConnectMsg, setStripeConnectMsg] = useState<string | null>(null)
   const [testAccountDraft, setTestAccountDraft] = useState('')
   const [uploadProgress, setUploadProgress] = useState<{
@@ -255,34 +254,6 @@ export function AdminConfigPage() {
           <p className="mt-1">{saveError}</p>
         </div>
       )}
-
-      <details
-        open={storageHelpOpen}
-        onToggle={(e) => setStorageHelpOpen((e.target as HTMLDetailsElement).open)}
-        className="mb-6 rounded-xl border border-brand-100 bg-brand-50 p-4"
-      >
-        <summary className="cursor-pointer font-medium text-brand-900">
-          Cómo subir imágenes (Firebase Storage)
-        </summary>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-brand-800">
-          <li>
-            En Productos, Categorías o aquí en Config, pulsa <strong>Subir imagen</strong> y elige
-            el archivo desde tu dispositivo.
-          </li>
-          <li>
-            Los archivos van a <strong>Firebase Storage</strong> (
-            <code className="rounded bg-brand-100 px-1">stores/{'{storeId}'}/…</code>
-            ).
-          </li>
-          <li>
-            Al <strong>Guardar</strong>, solo se guarda la URL de descarga en{' '}
-            <strong>Firestore</strong>. Storage = archivos; Firestore = metadatos/URLs.
-          </li>
-          <li>
-            No pegues URLs ni uses Google Drive. El flujo oficial es subir desde el dispositivo.
-          </li>
-        </ol>
-      </details>
 
       <div className="space-y-4 rounded-xl border bg-white p-6">
         <div>
