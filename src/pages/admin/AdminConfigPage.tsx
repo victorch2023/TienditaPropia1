@@ -634,10 +634,16 @@ export function AdminConfigPage() {
               checked={config.payments.culqiEnabled}
               onChange={(e) => updatePayments('culqiEnabled', e.target.checked)}
             />
-            Activar pasarela externa (Culqi) — legado / futuro
+            Activar pasarela externa (Culqi) — pruebas / tarjeta
           </label>
           <p className="mt-1 text-xs text-gray-500">
-            Desactivado por defecto. No rompe Yape/Plin/transferencia.
+            Desactivado por defecto. No rompe Yape/Plin/transferencia. Para sandbox:
+            llaves <code className="text-[11px]">pk_test_</code> /{' '}
+            <code className="text-[11px]">sk_test_</code>, secret Firebase{' '}
+            <code className="text-[11px]">CULQI_SECRET_KEY</code>, deploy de{' '}
+            <code className="text-[11px]">culqiCharge</code> y{' '}
+            <code className="text-[11px]">VITE_FUNCTIONS_URL</code>. Guía completa:{' '}
+            <code className="text-[11px]">docs/CULQI_SANDBOX.md</code>.
           </p>
         </div>
 

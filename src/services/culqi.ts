@@ -1,4 +1,5 @@
-import { FUNCTIONS_URL } from './firebase'
+import { FUNCTIONS_URL, CULQI_PUBLIC_KEY } from './firebase'
+import { demoError, isDemoMode } from '../config/demo'
 
 export interface CulqiChargeRequest {
   token: string
@@ -13,18 +14,66 @@ export interface CulqiChargeResponse {
   error?: string
 }
 
-import { demoError, isDemoMode } from '../config/demo'
+/** True si hay una llave pública de prueba/producción real (no placeholder). */
+export function isCulqiPublicKeyConfigured(key: string = CULQI_PUBLIC_KEY): boolean {
+  const k = (key || '').trim()
+  if (!k) return false
+  if (k === 'pk_test_placeholder') return false
+  if (/x{4,}/i.test(k) || /tu[_-]?llave/i.test(k) || /xxxxxxxx/i.test(k)) return false
+  return /^pk_(test|live)_[A-Za-z0-9]+$/.test(k)
+}
+
+/** True si el script Checkout.js cargó `window.Culqi`. */
+export function isCulqiCheckoutLoaded(): boolean {
+  return typeof window !== 'undefined' && typeof window.Culqi?.open === 'function'
+}
+
+export function getCulqiSetupError(publicKey: string = CULQI_PUBLIC_KEY): string | null {
+  if (!isCulqiPublicKeyConfigured(publicKey)) {
+    return 'Falta VITE_CULQI_PUBLIC_KEY (pk_test_…). Pégala en .env / .env.local y reinicia Vite. Ver docs/CULQI_SANDBOX.md.'
+  }
+  if (!isCulqiCheckoutLoaded()) {
+    return 'No se cargó Culqi Checkout.js. Recarga la página o revisa que index.html incluya https://js.culqi.com/checkout-js'
+  }
+  if (!FUNCTIONS_URL || FUNCTIONS_URL.includes('tu-proyecto') || FUNCTIONS_URL.includes('demo-project')) {
+    return 'Falta VITE_FUNCTIONS_URL (URL de Cloud Functions). Ver docs/CULQI_SANDBOX.md.'
+  }
+  return null
+}
 
 export async function chargeWithCulqi(
   request: CulqiChargeRequest
 ): Promise<CulqiChargeResponse> {
   if (isDemoMode()) throw demoError('Procesar pagos con Culqi')
+
+  const setupError = getCulqiSetupError()
+  if (setupError) {
+    throw new Error(setupError)
+  }
+
+  // Culqi API exige amount entero en céntimos
+  const amount = Math.round(request.amount)
+  if (!Number.isFinite(amount) || amount < 100) {
+    throw new Error('Monto inválido para Culqi (mínimo S/ 1.00 = 100 céntimos)')
+  }
+
   const res = await fetch(`${FUNCTIONS_URL}/culqiCharge`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
+    body: JSON.stringify({ ...request, amount }),
   })
-  const data = (await res.json()) as CulqiChargeResponse
+
+  let data: CulqiChargeResponse
+  try {
+    data = (await res.json()) as CulqiChargeResponse
+  } catch {
+    throw new Error(
+      res.status === 404
+        ? 'La function culqiCharge no está desplegada. Ejecuta: firebase deploy --only functions:culqiCharge'
+        : `Error HTTP ${res.status} al llamar a culqiCharge`
+    )
+  }
+
   if (!res.ok) {
     throw new Error(data.error || 'Error al procesar el pago')
   }
@@ -55,13 +104,26 @@ export function initCulqiCheckout(
   amountCentavos: number,
   orderId: string,
   onToken: (tokenId: string) => void,
-  onError: (message: string) => void
+  onError: (message: string) => void,
+  title = 'Mi Tiendita'
 ): void {
+  const setupError = getCulqiSetupError(publicKey)
+  if (setupError) {
+    onError(setupError)
+    return
+  }
+
+  const amount = Math.round(amountCentavos)
+  if (!Number.isFinite(amount) || amount < 100) {
+    onError('Monto inválido para Culqi (mínimo S/ 1.00)')
+    return
+  }
+
   window.Culqi.publicKey = publicKey
   window.Culqi.settings({
-    title: 'Mi Tiendita',
+    title: title.slice(0, 50),
     currency: 'PEN',
-    amount: amountCentavos,
+    amount,
     order: orderId,
   })
   window.Culqi.options({ lang: 'es', installments: false })

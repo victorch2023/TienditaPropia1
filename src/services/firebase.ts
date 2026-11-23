@@ -24,9 +24,11 @@ export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 
+/** Base URL de Cloud Functions (sin path). Ej: https://us-central1-tiendita-propia.cloudfunctions.net */
 export const FUNCTIONS_URL =
   import.meta.env.VITE_FUNCTIONS_URL ||
   `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net`
 
+/** Solo llave pública Culqi (pk_test_ / pk_live_). La secreta vive en Firebase secret CULQI_SECRET_KEY. */
 export const CULQI_PUBLIC_KEY =
   import.meta.env.VITE_CULQI_PUBLIC_KEY || 'pk_test_placeholder'

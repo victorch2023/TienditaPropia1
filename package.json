@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "setup-check": "bash scripts/setup-check.sh",
+    "setup-culqi": "bash scripts/setup-culqi-sandbox.sh",
     "seed": "node scripts/seed-firestore.mjs",
     "seed:citroleaf": "node scripts/seed-citroleaf.mjs",
     "seed:piyukis": "node scripts/seed-piyukis.mjs",

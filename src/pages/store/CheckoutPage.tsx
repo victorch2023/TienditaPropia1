@@ -9,7 +9,12 @@ import {
   createOrder,
 } from '../../services/orders'
 import { getShippingCost } from '../../services/store'
-import { chargeWithCulqi, initCulqiCheckout } from '../../services/culqi'
+import {
+  chargeWithCulqi,
+  getCulqiSetupError,
+  initCulqiCheckout,
+  isCulqiPublicKeyConfigured,
+} from '../../services/culqi'
 import { CULQI_PUBLIC_KEY } from '../../services/firebase'
 import {
   CITROLEAF_DISABLE_BANK_TRANSFER,
@@ -245,6 +250,12 @@ export function CheckoutPage() {
   const handleCulqiPayment = async () => {
     setProcessing(true)
     setError('')
+    const setupError = getCulqiSetupError(CULQI_PUBLIC_KEY)
+    if (setupError) {
+      setError(setupError)
+      setProcessing(false)
+      return
+    }
     try {
       const orderId = await createOrder({
         storeId,
@@ -261,6 +272,7 @@ export function CheckoutPage() {
         updatedAt: Date.now(),
       })
 
+      // totals.total ya está en céntimos (PEN * 100) — formato que exige Culqi
       initCulqiCheckout(
         CULQI_PUBLIC_KEY,
         totals.total,
@@ -283,7 +295,8 @@ export function CheckoutPage() {
         (msg) => {
           setError(msg)
           setProcessing(false)
-        }
+        },
+        config.name || 'Mi Tiendita'
       )
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al crear pedido')
@@ -640,13 +653,21 @@ export function CheckoutPage() {
           {payments.culqiEnabled && (
             <div className="border-t pt-4 text-center">
               <p className="mb-2 text-xs text-gray-500">O paga con tarjeta (Culqi)</p>
-              <button
-                onClick={handleCulqiPayment}
-                disabled={processing}
-                className="text-sm text-brand-600 underline hover:text-brand-700 disabled:opacity-50"
-              >
-                Pagar con tarjeta (Culqi)
-              </button>
+              {!isCulqiPublicKeyConfigured(CULQI_PUBLIC_KEY) ? (
+                <p className="mx-auto max-w-sm text-xs text-amber-700">
+                  Culqi está activado en Admin, pero falta la llave pública de prueba
+                  (`VITE_CULQI_PUBLIC_KEY=pk_test_…`). Yape/Plin siguen disponibles arriba.
+                  Guía: <code className="text-[11px]">docs/CULQI_SANDBOX.md</code>
+                </p>
+              ) : (
+                <button
+                  onClick={handleCulqiPayment}
+                  disabled={processing}
+                  className="text-sm text-brand-600 underline hover:text-brand-700 disabled:opacity-50"
+                >
+                  Pagar con tarjeta (Culqi)
+                </button>
+              )}
             </div>
           )}
         </div>

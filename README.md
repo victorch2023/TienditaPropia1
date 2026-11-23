@@ -189,25 +189,31 @@ Si Firebase lo solicita, crea estos índices compuestos:
 3. Los clientes eligen método de pago en checkout, indican número de operación y pueden subir el comprobante a Firebase Storage; el pedido queda en `pendiente_pago`
 4. En **Pedidos**, confirma el pago recibido para pasar a `pagado`
 
-### Pasarela Culqi (opcional — legado)
+### Pasarela Culqi (opcional — sandbox / tarjeta)
 
-1. En admin, activa **"Activar pasarela externa (Culqi)"**
-2. Crea cuenta en [culqi.com](https://culqi.com) y obtén llaves de prueba
-3. Agrega a `.env`: `VITE_CULQI_PUBLIC_KEY=pk_test_...`
-4. Para pagos reales necesitas **Firebase Blaze** (plan de pago por uso)
+Guía completa: **[docs/CULQI_SANDBOX.md](docs/CULQI_SANDBOX.md)**  
+Tarjetas oficiales: [docs Culqi — tarjetas de prueba](https://docs.culqi.com/es/documentacion/pagos-online/tarjetas-de-prueba/)
 
-#### Desplegar Cloud Functions (Culqi u otras)
+#### Checklist sandbox
+
+1. Cuenta Culqi → CulqiPanel (**Integración**) → API Keys → `pk_test_` + `sk_test_`
+2. `.env`: `VITE_CULQI_PUBLIC_KEY=pk_test_…` y `VITE_FUNCTIONS_URL=https://us-central1-tiendita-propia.cloudfunctions.net`
+3. Firebase Blaze + secret (la secreta **no** va al frontend):
+   ```bash
+   firebase use tiendita-propia
+   firebase functions:secrets:set CULQI_SECRET_KEY   # pega sk_test_…
+   cd functions && npm install && npm run build && cd ..
+   firebase deploy --only functions:culqiCharge
+   ```
+4. GitHub Actions secrets: `VITE_CULQI_PUBLIC_KEY`, `VITE_FUNCTIONS_URL` (mismo valor)
+5. Admin → Configuración → activar Culqi → Guardar (no rompe Yape/Plin)
+6. Primer cobro test: Visa `4111 1111 1111 1111` | `09/30` | CVV `123`
 
 ```bash
-cd functions
-npm install
-cd ..
-# Culqi (opcional):
-firebase functions:secrets:set CULQI_SECRET_KEY
-firebase deploy --only functions
+npm run setup-culqi   # checklist local (scripts/setup-culqi-sandbox.sh)
 ```
 
-Copia la URL de functions a `VITE_FUNCTIONS_URL` en `.env` y en los secrets de GitHub.
+Montos: la app y Culqi usan **céntimos** (S/ 10.50 → `1050`).
 
 ---
 

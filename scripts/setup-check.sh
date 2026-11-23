@@ -86,6 +86,9 @@ REQUIRED_VARS=(
   VITE_FIREBASE_STORAGE_BUCKET
   VITE_FIREBASE_MESSAGING_SENDER_ID
   VITE_FIREBASE_APP_ID
+)
+
+OPTIONAL_CULQI_VARS=(
   VITE_CULQI_PUBLIC_KEY
   VITE_FUNCTIONS_URL
 )
@@ -100,6 +103,17 @@ if [ -f ".env" ]; then
     val="${!var:-}"
     if [ -z "$val" ] || [[ "$val" == tu_* ]] || [[ "$val" == *xxxxxxxx* ]] || [[ "$val" == *tu-proyecto* ]]; then
       check_warn "$var sin configurar o con valor de ejemplo"
+    else
+      check_ok "$var configurada"
+    fi
+  done
+
+  echo ""
+  echo "--- Culqi (opcional, sandbox) — ver docs/CULQI_SANDBOX.md ---"
+  for var in "${OPTIONAL_CULQI_VARS[@]}"; do
+    val="${!var:-}"
+    if [ -z "$val" ] || [[ "$val" == tu_* ]] || [[ "$val" == *xxxxxxxx* ]] || [[ "$val" == *tu-proyecto* ]] || [[ "$val" == *PEGA_AQUI* ]]; then
+      check_warn "$var opcional — sin configurar (Culqi deshabilitado hasta que pegues pk_test_ / URL)"
     else
       check_ok "$var configurada"
     fi

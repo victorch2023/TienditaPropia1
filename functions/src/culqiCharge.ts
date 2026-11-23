@@ -30,9 +30,28 @@ export const culqiCharge = onRequest(
     }
 
     const { token, orderId, amount, email } = req.body as ChargeRequest
+    const amountCentavos = Math.round(Number(amount))
 
-    if (!token || !orderId || !amount || !email) {
+    if (!token || !orderId || !amountCentavos || !email) {
       res.status(400).json({ success: false, error: 'Datos incompletos' })
+      return
+    }
+
+    if (amountCentavos < 100) {
+      res.status(400).json({
+        success: false,
+        error: 'Monto mínimo Culqi: 100 céntimos (S/ 1.00)',
+      })
+      return
+    }
+
+    const secret = culqiSecretKey.value()
+    if (!secret || !secret.startsWith('sk_')) {
+      res.status(500).json({
+        success: false,
+        error:
+          'CULQI_SECRET_KEY no configurada. Usa sk_test_… en sandbox (firebase functions:secrets:set CULQI_SECRET_KEY).',
+      })
       return
     }
 
@@ -51,20 +70,21 @@ export const culqiCharge = onRequest(
       return
     }
 
-    if (order.total !== amount) {
+    if (Math.round(Number(order.total)) !== amountCentavos) {
       res.status(400).json({ success: false, error: 'Monto no coincide' })
       return
     }
 
     try {
+      // amount = céntimos enteros (PEN * 100), igual que en Checkout.js
       const culqiRes = await fetch('https://api.culqi.com/v2/charges', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${culqiSecretKey.value()}`,
+          Authorization: `Bearer ${secret}`,
         },
         body: JSON.stringify({
-          amount,
+          amount: amountCentavos,
           currency_code: 'PEN',
           email,
           source_id: token,
