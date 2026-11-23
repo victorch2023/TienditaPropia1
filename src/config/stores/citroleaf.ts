@@ -83,12 +83,6 @@ export const CITROLEAF_STORE_CONFIG: StoreConfig = {
     bankCCI: '00219100987654321100',
     paymentInstructions:
       'Paga por Yape o Plin el monto exacto e indica tu número de pedido. Verificamos en breve.',
-    stripeEnabled: false,
-    stripeMode: 'test',
-    cardFeePolicy: 'absorb',
-    stripeFeePercent: 3.99,
-    stripeFeeFixedCents: 100,
-    platformFeePercent: 0,
   },
 }
 

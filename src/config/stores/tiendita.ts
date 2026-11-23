@@ -33,12 +33,6 @@ export const TIENDITA_STORE_CONFIG: StoreConfig = {
     bankCCI: '00219100123456781234',
     paymentInstructions:
       'Realiza el pago por el monto exacto e indica tu número de pedido en el mensaje.',
-    stripeEnabled: false,
-    stripeMode: 'test',
-    cardFeePolicy: 'absorb',
-    stripeFeePercent: 3.99,
-    stripeFeeFixedCents: 100,
-    platformFeePercent: 0,
   },
 }
 

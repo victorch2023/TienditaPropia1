@@ -16,13 +16,7 @@
       "bankName": "BCP",
       "bankAccount": "191-12345678-0-12",
       "bankCCI": "00219100123456781234",
-      "paymentInstructions": "Realiza el pago por el monto exacto e indica tu número de pedido.",
-      "stripeEnabled": false,
-      "stripeMode": "test",
-      "cardFeePolicy": "absorb",
-      "stripeFeePercent": 3.99,
-      "stripeFeeFixedCents": 100,
-      "platformFeePercent": 0
+      "paymentInstructions": "Realiza el pago por el monto exacto e indica tu número de pedido."
     }
   },
   "categories": [
