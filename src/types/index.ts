@@ -169,7 +169,7 @@ export interface StoreConfig {
   /** Si la tienda aparece en el selector */
   active?: boolean
   logoUrl?: string
-  /** Banner principal de la página de inicio (URL de imagen; preferible Firebase Storage) */
+  /** Banner principal de la página de inicio (download URL de Firebase Storage) */
   heroBannerUrl?: string
   /** Imagen de fondo sutil para toda la tienda */
   backgroundImageUrl?: string

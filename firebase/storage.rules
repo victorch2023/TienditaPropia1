@@ -73,6 +73,22 @@ service firebase.storage {
       allow delete: if isStoreAdmin(storeId);
     }
 
+    // Branding / apariencia: logo, hero, fondo
+    // Path: stores/{storeId}/branding/{filename}
+    match /stores/{storeId}/branding/{fileName} {
+      allow read: if true;
+      allow create, update: if isStoreAdmin(storeId) && isImageUpload();
+      allow delete: if isStoreAdmin(storeId);
+    }
+
+    // Categorías: miniatura o banner
+    // Path: stores/{storeId}/categories/{categoryId|new}/{filename}
+    match /stores/{storeId}/categories/{categoryId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isStoreAdmin(storeId) && isImageUpload();
+      allow delete: if isStoreAdmin(storeId);
+    }
+
     // Alta de producto (aún sin ID): stores/{storeId}/uploads/{uid}/{filename}
     match /stores/{storeId}/uploads/{userId}/{fileName} {
       allow read: if true;

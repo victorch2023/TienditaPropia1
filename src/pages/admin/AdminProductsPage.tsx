@@ -35,8 +35,6 @@ export function AdminProductsPage() {
   const [saving, setSaving] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
-  const [manualUrl, setManualUrl] = useState('')
-  const [showManualUrl, setShowManualUrl] = useState(false)
   const [imagePreviewFailed, setImagePreviewFailed] = useState<Record<number, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -74,8 +72,6 @@ export function AdminProductsPage() {
     }
     setUploadProgress(null)
     setUploadError(null)
-    setManualUrl('')
-    setShowManualUrl(false)
     setImagePreviewFailed({})
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -162,20 +158,6 @@ export function AdminProductsPage() {
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
-  }
-
-  const addManualUrl = () => {
-    const trimmed = manualUrl.trim()
-    if (!trimmed) return
-    if (isGoogleDriveFolderUrl(trimmed)) {
-      setUploadError(
-        'Ese enlace es de una carpeta de Google Drive (no sirve). Sube la imagen con «Elegir imágenes» (Firebase Storage) o pega la URL de un archivo de imagen.'
-      )
-      return
-    }
-    setImageUrls((prev) => [...prev, toDirectImageUrl(trimmed)])
-    setManualUrl('')
-    setUploadError(null)
   }
 
   if (loading) return <LoadingSpinner />
@@ -278,7 +260,7 @@ export function AdminProductsPage() {
                     uploading ? 'pointer-events-none opacity-60' : ''
                   }`}
                 >
-                  {uploading ? `Subiendo… ${uploadProgress}%` : 'Elegir imágenes'}
+                  {uploading ? `Subiendo… ${uploadProgress}%` : 'Subir imagen'}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -289,13 +271,6 @@ export function AdminProductsPage() {
                     onChange={(e) => void handleFilesSelected(e.target.files)}
                   />
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowManualUrl((v) => !v)}
-                  className="text-sm text-gray-600 hover:underline"
-                >
-                  {showManualUrl ? 'Ocultar URL externa' : 'Pegar URL externa (opcional)'}
-                </button>
               </div>
 
               {uploading && (
@@ -311,24 +286,6 @@ export function AdminProductsPage() {
                 <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {uploadError}
                 </p>
-              )}
-
-              {showManualUrl && (
-                <div className="flex gap-2">
-                  <input
-                    placeholder="https://… (legado: URL pública externa)"
-                    value={manualUrl}
-                    onChange={(e) => setManualUrl(e.target.value)}
-                    className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={addManualUrl}
-                    className="shrink-0 rounded-lg border px-3 py-2 text-sm text-brand-700 hover:bg-brand-50"
-                  >
-                    Agregar URL
-                  </button>
-                </div>
               )}
 
               {imageUrls.length === 0 ? (
@@ -361,8 +318,8 @@ export function AdminProductsPage() {
                         )}
                         {isGoogleDriveFolderUrl(url) && (
                           <p className="mt-1 text-red-600">
-                            Enlace de carpeta de Drive (no sirve). Quítalo y súbelo con «Elegir
-                            imágenes» (Firebase Storage).
+                            Enlace de carpeta de Drive (no sirve). Quítalo y súbelo con «Subir
+                            imagen».
                           </p>
                         )}
                       </div>

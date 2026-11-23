@@ -75,46 +75,42 @@ export function mapStorageError(err: unknown): Error {
   )
 }
 
-/**
- * Sube una imagen de producto a Firebase Storage y devuelve la URL de descarga.
- * Path: stores/{storeId}/products/{productId}/… o stores/{storeId}/uploads/{uid}/… si aún no hay productId.
- */
-export async function uploadProductImage(
-  storeId: string,
-  file: File,
-  productId?: string,
-  onProgress?: (percent: number) => void
-): Promise<string> {
-  if (isDemoMode()) {
-    throw demoError('Subir imágenes')
+async function ensureAdminAuth(): Promise<string> {
+  const user = auth.currentUser
+  if (!user) {
+    throw new Error('Debes iniciar sesión para subir imágenes.')
   }
+  try {
+    await user.getIdToken(/* forceRefresh */ true)
+  } catch {
+    /* si falla el refresh, el upload usará el token en caché */
+  }
+  return user.uid
+}
 
+function assertImageFile(file: File): void {
   if (!file.type.startsWith('image/')) {
     throw new Error('Solo se permiten archivos de imagen (JPG, PNG, WebP, etc.).')
   }
   if (file.size > MAX_BYTES) {
     throw new Error('La imagen supera el límite de 10 MB.')
   }
+}
 
-  const user = auth.currentUser
-  if (!user) {
-    throw new Error('Debes iniciar sesión para subir imágenes.')
+/**
+ * Sube una imagen a un path de Storage y devuelve la URL de descarga.
+ * Requiere admin autenticado de la tienda (reglas).
+ */
+export async function uploadStoreImage(
+  path: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  if (isDemoMode()) {
+    throw demoError('Subir imágenes')
   }
-  const uid = user.uid
-
-  // Asegura token fresco para que Storage evalúe request.auth correctamente.
-  try {
-    await user.getIdToken(/* forceRefresh */ true)
-  } catch {
-    /* si falla el refresh, el upload usará el token en caché */
-  }
-
-  const fileName = `${newId()}-${safeFileName(file.name)}`
-  const knownProduct =
-    productId && productId !== 'new' ? productId : null
-  const path = knownProduct
-    ? `stores/${storeId}/products/${knownProduct}/${fileName}`
-    : `stores/${storeId}/uploads/${uid}/${fileName}`
+  assertImageFile(file)
+  await ensureAdminAuth()
 
   const storageRef = ref(storage, path)
   const task = uploadBytesResumable(storageRef, file, {
@@ -140,6 +136,72 @@ export async function uploadProductImage(
       }
     )
   })
+}
+
+export type BrandingAssetKind = 'logo' | 'hero' | 'background'
+
+/**
+ * Branding / apariencia de tienda.
+ * Path: stores/{storeId}/branding/{kind}-{uuid}-{filename}
+ */
+export async function uploadBrandingImage(
+  storeId: string,
+  kind: BrandingAssetKind,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  const fileName = `${kind}-${newId()}-${safeFileName(file.name)}`
+  const path = `stores/${storeId}/branding/${fileName}`
+  return uploadStoreImage(path, file, onProgress)
+}
+
+/**
+ * Imagen o banner de categoría.
+ * Path: stores/{storeId}/categories/{categoryId|new}/{kind}-{uuid}-{filename}
+ */
+export async function uploadCategoryImage(
+  storeId: string,
+  file: File,
+  options?: {
+    categoryId?: string
+    kind?: 'image' | 'banner'
+    onProgress?: (percent: number) => void
+  }
+): Promise<string> {
+  const kind = options?.kind || 'image'
+  const catSegment =
+    options?.categoryId && options.categoryId !== 'new'
+      ? options.categoryId
+      : 'new'
+  const fileName = `${kind}-${newId()}-${safeFileName(file.name)}`
+  const path = `stores/${storeId}/categories/${catSegment}/${fileName}`
+  return uploadStoreImage(path, file, options?.onProgress)
+}
+
+/**
+ * Sube una imagen de producto a Firebase Storage y devuelve la URL de descarga.
+ * Path: stores/{storeId}/products/{productId}/… o stores/{storeId}/uploads/{uid}/… si aún no hay productId.
+ */
+export async function uploadProductImage(
+  storeId: string,
+  file: File,
+  productId?: string,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  if (isDemoMode()) {
+    throw demoError('Subir imágenes')
+  }
+  assertImageFile(file)
+  const uid = await ensureAdminAuth()
+
+  const fileName = `${newId()}-${safeFileName(file.name)}`
+  const knownProduct =
+    productId && productId !== 'new' ? productId : null
+  const path = knownProduct
+    ? `stores/${storeId}/products/${knownProduct}/${fileName}`
+    : `stores/${storeId}/uploads/${uid}/${fileName}`
+
+  return uploadStoreImage(path, file, onProgress)
 }
 
 export interface PaymentReceiptUpload {

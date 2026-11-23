@@ -43,7 +43,7 @@ export const PIYUKIS_STORE_CONFIG: StoreConfig = {
     platformFeePercent: 0,
   },
   imageHostingNote:
-    'Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs se guardan en Firestore. No uses Google Drive para imágenes nuevas.',
+    'Sube imágenes con «Subir imagen» en Admin (Firebase Storage). Las URLs se guardan en Firestore.',
 }
 
 export const PIYUKIS_CATEGORIES: Category[] = []

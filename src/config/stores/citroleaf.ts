@@ -91,7 +91,7 @@ export const CITROLEAF_STORE_CONFIG: StoreConfig = {
     platformFeePercent: 0,
   },
   imageHostingNote:
-    'Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs se guardan en Firestore. URLs públicas externas solo como legado opcional.',
+    'Sube imágenes con «Subir imagen» en Admin (Firebase Storage). Las URLs se guardan en Firestore.',
 }
 
 export const CITROLEAF_CATEGORIES: Category[] = [

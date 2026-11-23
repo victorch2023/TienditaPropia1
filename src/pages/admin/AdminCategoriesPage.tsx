@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../hooks/useStore'
 import {
   getCategories,
@@ -6,6 +6,7 @@ import {
   updateCategory,
   deleteCategory,
 } from '../../services/categories'
+import { uploadCategoryImage } from '../../services/storage'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { DriveImage } from '../../components/DriveImage'
 import { slugify } from '../../utils/money'
@@ -21,6 +22,13 @@ export function AdminCategoriesPage() {
   const [order, setOrder] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
   const [bannerUrl, setBannerUrl] = useState('')
+  const [uploadProgress, setUploadProgress] = useState<{
+    kind: 'image' | 'banner'
+    percent: number
+  } | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
     setLoading(true)
@@ -47,6 +55,10 @@ export function AdminCategoriesPage() {
       setImageUrl('')
       setBannerUrl('')
     }
+    setUploadProgress(null)
+    setUploadError(null)
+    if (imageInputRef.current) imageInputRef.current.value = ''
+    if (bannerInputRef.current) bannerInputRef.current.value = ''
   }
 
   const handleSave = async () => {
@@ -72,7 +84,32 @@ export function AdminCategoriesPage() {
     load()
   }
 
+  const handleUpload = async (kind: 'image' | 'banner', files: FileList | null) => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setUploadProgress({ kind, percent: 0 })
+    try {
+      const url = await uploadCategoryImage(storeId, file, {
+        categoryId: editing === 'new' ? undefined : editing ?? undefined,
+        kind,
+        onProgress: (percent) => setUploadProgress({ kind, percent }),
+      })
+      if (kind === 'image') setImageUrl(url)
+      else setBannerUrl(url)
+      setUploadProgress(null)
+    } catch (err) {
+      setUploadProgress(null)
+      setUploadError(err instanceof Error ? err.message : 'Error al subir la imagen.')
+    } finally {
+      if (kind === 'image' && imageInputRef.current) imageInputRef.current.value = ''
+      if (kind === 'banner' && bannerInputRef.current) bannerInputRef.current.value = ''
+    }
+  }
+
   if (loading) return <LoadingSpinner />
+
+  const uploading = uploadProgress !== null
 
   return (
     <div>
@@ -102,37 +139,88 @@ export function AdminCategoriesPage() {
               onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
               className="rounded-lg border px-3 py-2 text-sm"
             />
-            <div className="col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+            <div className="col-span-2 space-y-2">
+              <label className="block text-xs font-medium text-gray-600">
                 Imagen miniatura (opcional)
               </label>
-              <input
-                placeholder="URL pública (preferible Firebase Storage)"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Pega la URL de descarga de Storage u otra URL pública. URLs antiguas de Drive
-                siguen funcionando (legado).
+              <p className="text-xs text-gray-500">
+                Sube desde tu dispositivo a Firebase Storage. Máx. 10 MB.
               </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <label
+                  className={`inline-flex cursor-pointer items-center rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 ${
+                    uploading ? 'pointer-events-none opacity-60' : ''
+                  }`}
+                >
+                  {uploadProgress?.kind === 'image'
+                    ? `Subiendo… ${uploadProgress.percent}%`
+                    : 'Subir imagen'}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => void handleUpload('image', e.target.files)}
+                  />
+                </label>
+                {imageUrl.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl('')}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
+              {imageUrl.trim() && (
+                <div className="mt-1 flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
+                  <DriveImage
+                    src={imageUrl}
+                    alt="Vista previa miniatura"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+              )}
             </div>
-            <div className="col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+            <div className="col-span-2 space-y-2">
+              <label className="block text-xs font-medium text-gray-600">
                 Banner de categoría (cabecera en catálogo)
               </label>
-              <input
-                placeholder="URL pública (preferible Firebase Storage)"
-                value={bannerUrl}
-                onChange={(e) => setBannerUrl(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Recomendado: 800×200 px, máx. 1 MB, JPG/PNG/WebP. Se muestra al filtrar por esta
-                categoría en el catálogo.
+              <p className="text-xs text-gray-500">
+                Recomendado: 800×200 px, JPG/PNG/WebP. Se muestra al filtrar por esta categoría.
               </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <label
+                  className={`inline-flex cursor-pointer items-center rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 ${
+                    uploading ? 'pointer-events-none opacity-60' : ''
+                  }`}
+                >
+                  {uploadProgress?.kind === 'banner'
+                    ? `Subiendo… ${uploadProgress.percent}%`
+                    : 'Subir banner'}
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => void handleUpload('banner', e.target.files)}
+                  />
+                </label>
+                {bannerUrl.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setBannerUrl('')}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
               {bannerUrl.trim() && (
-                <div className="relative mt-2 overflow-hidden rounded-lg border">
+                <div className="relative mt-1 overflow-hidden rounded-lg border">
                   <DriveImage
                     src={bannerUrl}
                     alt="Vista previa del banner"
@@ -142,8 +230,17 @@ export function AdminCategoriesPage() {
               )}
             </div>
           </div>
+          {uploadError && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {uploadError}
+            </p>
+          )}
           <div className="mt-4 flex gap-3">
-            <button onClick={handleSave} className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white">
+            <button
+              onClick={handleSave}
+              disabled={uploading}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white disabled:opacity-60"
+            >
               Guardar
             </button>
             <button onClick={() => setEditing(null)} className="rounded-lg border px-4 py-2 text-sm">

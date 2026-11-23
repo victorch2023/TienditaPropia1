@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../hooks/useStore'
 import { getStoreConfig, updateStoreConfig } from '../../services/store'
+import {
+  uploadBrandingImage,
+  type BrandingAssetKind,
+} from '../../services/storage'
 import { LIMA_DISTRITOS } from '../../data/lima-distritos'
 import { LoadingSpinner } from '../../components/LoadingSpinner'
 import { centavosToSoles, solesToCentavos } from '../../utils/money'
@@ -92,6 +96,14 @@ export function AdminConfigPage() {
   const [storageHelpOpen, setStorageHelpOpen] = useState(false)
   const [stripeConnectMsg, setStripeConnectMsg] = useState<string | null>(null)
   const [testAccountDraft, setTestAccountDraft] = useState('')
+  const [uploadProgress, setUploadProgress] = useState<{
+    kind: BrandingAssetKind
+    percent: number
+  } | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const heroInputRef = useRef<HTMLInputElement>(null)
+  const backgroundInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     getStoreConfig(storeId)
@@ -102,6 +114,39 @@ export function AdminConfigPage() {
       })
       .finally(() => setLoading(false))
   }, [storeId])
+
+  const handleBrandingUpload = async (
+    kind: BrandingAssetKind,
+    files: FileList | null
+  ) => {
+    const file = files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setUploadProgress({ kind, percent: 0 })
+    try {
+      const url = await uploadBrandingImage(storeId, kind, file, (percent) =>
+        setUploadProgress({ kind, percent })
+      )
+      if (kind === 'logo') setConfig((c) => ({ ...c, logoUrl: url }))
+      else if (kind === 'hero') setConfig((c) => ({ ...c, heroBannerUrl: url }))
+      else setConfig((c) => ({ ...c, backgroundImageUrl: url }))
+      setSavedConfigJson(null)
+      setUploadProgress(null)
+    } catch (err) {
+      setUploadProgress(null)
+      setUploadError(
+        err instanceof Error ? err.message : 'Error al subir la imagen.'
+      )
+    } finally {
+      if (kind === 'logo' && logoInputRef.current) logoInputRef.current.value = ''
+      if (kind === 'hero' && heroInputRef.current) heroInputRef.current.value = ''
+      if (kind === 'background' && backgroundInputRef.current) {
+        backgroundInputRef.current.value = ''
+      }
+    }
+  }
+
+  const brandingUploading = uploadProgress !== null
 
   const showSuccessBanner =
     savedConfigJson !== null &&
@@ -222,22 +267,20 @@ export function AdminConfigPage() {
         </summary>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-brand-800">
           <li>
-            En Admin → <strong>Productos</strong> → Nuevo / Editar, pulsa{' '}
-            <strong>Elegir imágenes</strong>.
+            En Productos, Categorías o aquí en Config, pulsa <strong>Subir imagen</strong> y elige
+            el archivo desde tu dispositivo.
           </li>
           <li>
-            Los archivos se suben a <strong>Firebase Storage</strong> (
+            Los archivos van a <strong>Firebase Storage</strong> (
             <code className="rounded bg-brand-100 px-1">stores/{'{storeId}'}/…</code>
             ).
           </li>
           <li>
-            Al <strong>Guardar</strong>, la URL de descarga se guarda en el producto en{' '}
-            <strong>Firestore</strong> (<code className="rounded bg-brand-100 px-1">images</code>
-            ). Storage = archivos; Firestore = metadatos/URLs.
+            Al <strong>Guardar</strong>, solo se guarda la URL de descarga en{' '}
+            <strong>Firestore</strong>. Storage = archivos; Firestore = metadatos/URLs.
           </li>
           <li>
-            No uses Google Drive para imágenes nuevas. Las URLs antiguas de Drive u otros hosts
-            siguen mostrándose en el catálogo (legado).
+            No pegues URLs ni uses Google Drive. El flujo oficial es subir desde el dispositivo.
           </li>
         </ol>
       </details>
@@ -261,17 +304,42 @@ export function AdminConfigPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">URL del logo</label>
-          <input
-            value={config.logoUrl || ''}
-            onChange={(e) => setConfig({ ...config, logoUrl: e.target.value })}
-            placeholder="https://… (Firebase Storage u otra URL pública)"
-            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-          />
+          <label className="block text-sm font-medium text-gray-700">Logo</label>
           <p className="mt-1 text-xs text-gray-500">
-            Recomendado: 200×200 px, cuadrado, PNG con fondo transparente, máx. 500 KB. Preferible
-            URL de Firebase Storage.
+            Recomendado: 200×200 px, cuadrado, PNG con fondo transparente, máx. 500 KB. Se sube a
+            Firebase Storage.
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <label
+              className={`inline-flex cursor-pointer items-center rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 ${
+                brandingUploading ? 'pointer-events-none opacity-60' : ''
+              }`}
+            >
+              {uploadProgress?.kind === 'logo'
+                ? `Subiendo… ${uploadProgress.percent}%`
+                : 'Subir imagen'}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={brandingUploading}
+                onChange={(e) => void handleBrandingUpload('logo', e.target.files)}
+              />
+            </label>
+            {config.logoUrl?.trim() && (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfig({ ...config, logoUrl: undefined })
+                  setSavedConfigJson(null)
+                }}
+                className="text-sm text-red-600 hover:underline"
+              >
+                Quitar
+              </button>
+            )}
+          </div>
           {config.logoUrl?.trim() && (
             <div className="mt-2 flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-gray-50">
               <DriveImage src={config.logoUrl} alt="Vista previa del logo" className="max-h-full max-w-full object-contain" />
@@ -284,18 +352,43 @@ export function AdminConfigPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Banner de inicio (URL de imagen)
+                Banner de inicio
               </label>
-              <input
-                value={config.heroBannerUrl || ''}
-                onChange={(e) => setConfig({ ...config, heroBannerUrl: e.target.value })}
-                placeholder="https://… (Firebase Storage u otra URL pública)"
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-              />
               <p className="mt-1 text-xs text-gray-500">
                 Recomendado: 1200×400 px (proporción 3:1), máx. 2 MB, JPG/PNG/WebP. Si está vacío,
                 se muestra un degradado con los colores de la marca.
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <label
+                  className={`inline-flex cursor-pointer items-center rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 ${
+                    brandingUploading ? 'pointer-events-none opacity-60' : ''
+                  }`}
+                >
+                  {uploadProgress?.kind === 'hero'
+                    ? `Subiendo… ${uploadProgress.percent}%`
+                    : 'Subir imagen'}
+                  <input
+                    ref={heroInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={brandingUploading}
+                    onChange={(e) => void handleBrandingUpload('hero', e.target.files)}
+                  />
+                </label>
+                {config.heroBannerUrl?.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfig({ ...config, heroBannerUrl: undefined })
+                      setSavedConfigJson(null)
+                    }}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
               {config.heroBannerUrl?.trim() && (
                 <div className="mt-2 overflow-hidden rounded-lg border">
                   <DriveImage
@@ -310,16 +403,43 @@ export function AdminConfigPage() {
               <label className="block text-sm font-medium text-gray-700">
                 Imagen de fondo de la tienda (opcional)
               </label>
-              <input
-                value={config.backgroundImageUrl || ''}
-                onChange={(e) => setConfig({ ...config, backgroundImageUrl: e.target.value })}
-                placeholder="https://… (Firebase Storage u otra URL pública)"
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-              />
               <p className="mt-1 text-xs text-gray-500">
                 Recomendado: 1920×1080 px, imagen suave o patrón, máx. 2 MB. Se aplica con
                 opacidad para mantener el texto legible.
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <label
+                  className={`inline-flex cursor-pointer items-center rounded-lg bg-brand-600 px-4 py-2 text-sm text-white hover:bg-brand-700 ${
+                    brandingUploading ? 'pointer-events-none opacity-60' : ''
+                  }`}
+                >
+                  {uploadProgress?.kind === 'background'
+                    ? `Subiendo… ${uploadProgress.percent}%`
+                    : 'Subir imagen'}
+                  <input
+                    ref={backgroundInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={brandingUploading}
+                    onChange={(e) =>
+                      void handleBrandingUpload('background', e.target.files)
+                    }
+                  />
+                </label>
+                {config.backgroundImageUrl?.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfig({ ...config, backgroundImageUrl: undefined })
+                      setSavedConfigJson(null)
+                    }}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
               {config.backgroundImageUrl?.trim() && (
                 <div className="relative mt-2 overflow-hidden rounded-lg border">
                   <DriveImage
@@ -331,6 +451,12 @@ export function AdminConfigPage() {
                 </div>
               )}
             </div>
+
+            {uploadError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {uploadError}
+              </p>
+            )}
             <div>
               <p className="mb-2 text-sm font-medium text-gray-700">Colores de la marca</p>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -448,14 +574,13 @@ export function AdminConfigPage() {
           <textarea
             value={config.imageHostingNote || ''}
             onChange={(e) => setConfig({ ...config, imageHostingNote: e.target.value })}
-            placeholder="Ej. Sube desde Admin → Productos (Firebase Storage). Las URLs quedan en Firestore."
+            placeholder="Ej. Sube imágenes con «Subir imagen» en Admin (Firebase Storage)."
             className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
             rows={2}
           />
           <p className="mt-1 text-xs text-gray-500">
-            Recordatorio interno para quien administra la tienda. Flujo correcto: subir a Firebase
-            Storage desde el admin; la URL se guarda en Firestore. No se muestra en la tienda
-            pública. Google Drive ya no es el método recomendado.
+            Recordatorio interno. Flujo: archivo del dispositivo → Firebase Storage; la URL se
+            guarda en Firestore. No se muestra en la tienda pública.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
@@ -834,7 +959,7 @@ export function AdminConfigPage() {
         <div className="flex flex-wrap items-center gap-3 border-t pt-4">
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || brandingUploading}
             className="rounded-lg bg-brand-600 px-6 py-2 text-sm text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? 'Guardando...' : 'Guardar configuración'}

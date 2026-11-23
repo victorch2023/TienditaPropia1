@@ -41,7 +41,7 @@ export const TIENDITA_STORE_CONFIG: StoreConfig = {
     platformFeePercent: 0,
   },
   imageHostingNote:
-    'Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs de descarga se guardan en el producto en Firestore. No uses Google Drive para imágenes nuevas.',
+    'Sube imágenes con «Subir imagen» en Admin (Firebase Storage). Las URLs de descarga se guardan en Firestore.',
 }
 
 export const TIENDITA_CATEGORIES: Category[] = [
