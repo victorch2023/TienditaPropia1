@@ -50,7 +50,6 @@ function normalizeConfigForSave(config: StoreConfig): StoreConfig {
     accentColor: emptyToUndefined(config.accentColor),
     ruc: emptyToUndefined(config.ruc),
     razonSocial: emptyToUndefined(config.razonSocial),
-    imageHostingNote: emptyToUndefined(config.imageHostingNote),
     payments: {
       ...config.payments,
       yapeNumber: emptyToUndefined(config.payments.yapeNumber),
@@ -566,22 +565,6 @@ export function AdminConfigPage() {
               )}
             </div>
           </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Nota sobre imágenes (solo admin, opcional)
-          </label>
-          <textarea
-            value={config.imageHostingNote || ''}
-            onChange={(e) => setConfig({ ...config, imageHostingNote: e.target.value })}
-            placeholder="Ej. Sube imágenes con «Subir imagen» en Admin (Firebase Storage)."
-            className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-            rows={2}
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Recordatorio interno. Flujo: archivo del dispositivo → Firebase Storage; la URL se
-            guarda en Firestore. No se muestra en la tienda pública.
-          </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>

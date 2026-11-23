@@ -23,8 +23,7 @@
       "stripeFeePercent": 3.99,
       "stripeFeeFixedCents": 100,
       "platformFeePercent": 0
-    },
-    "imageHostingNote": "Sube imágenes desde Admin → Productos (Firebase Storage). Las URLs de descarga se guardan en el producto en Firestore. No uses Google Drive para imágenes nuevas."
+    }
   },
   "categories": [
     { "id": "cat-electronica", "name": "Electrónica", "slug": "electronica", "order": 1 },

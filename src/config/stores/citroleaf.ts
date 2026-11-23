@@ -90,8 +90,6 @@ export const CITROLEAF_STORE_CONFIG: StoreConfig = {
     stripeFeeFixedCents: 100,
     platformFeePercent: 0,
   },
-  imageHostingNote:
-    'Sube imágenes con «Subir imagen» en Admin (Firebase Storage). Las URLs se guardan en Firestore.',
 }
 
 export const CITROLEAF_CATEGORIES: Category[] = [

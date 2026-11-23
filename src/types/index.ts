@@ -186,8 +186,6 @@ export interface StoreConfig {
   shippingByDistrito: Record<string, number>
   payments: StorePaymentsConfig
   description?: string
-  /** Nota interna admin: subir a Firebase Storage; URL en Firestore (no Drive) */
-  imageHostingNote?: string
 }
 
 export const DEFAULT_PAYMENTS_CONFIG: StorePaymentsConfig = {
